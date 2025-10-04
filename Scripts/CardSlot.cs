@@ -12,47 +12,67 @@ public class CardSlot : MonoBehaviour
     private int currentCount = 0;
 
     // Обновляем позицию placeholder во время Drag
-    public void UpdatePlaceholder(PointerEventData eventData)
+public void UpdatePlaceholder(PointerEventData eventData)
+{
+    // проверяем, наведён ли курсор на слот
+    if (!RectTransformUtility.RectangleContainsScreenPoint(
+        slotPanel as RectTransform,
+        eventData.position,
+        eventData.pressEventCamera))
     {
-        if (placeholder == null)
-        {
-            placeholder = Instantiate(placeholderPrefab, slotPanel);
-        }
-
-        int index = GetInsertIndexClosest(eventData);
-        placeholder.transform.SetSiblingIndex(index);
+        DestroyPlaceholder();
+        return;
     }
 
-    // Когда отпустили карту
-    public void PlaceCard(CardInstance card, PointerEventData eventData)
+    if (placeholder == null)
     {
-        if (card == null || card.data == null) return;
+        placeholder = Instantiate(placeholderPrefab, slotPanel);
+    }
 
-        if (currentCount >= maxCreatures)
+    int index = GetInsertIndexClosest(eventData);
+    placeholder.transform.SetSiblingIndex(index);
+}
+
+
+    // Когда отпустили карту
+public void PlaceCard(CardInstance card, PointerEventData eventData)
+{
+    if (card == null || card.data == null) return;
+
+    // если не наведён на слот → вернуть карту в руку
+    if (placeholder == null)
+    {
+        Debug.Log("Карта возвращена в руку");
+        card.ReturnToHand(); // нужно реализовать в CardInstance
+        return;
+    }
+
+        if (GetCreatures().Count >= maxCreatures)
         {
             Debug.Log("Слот переполнен!");
             DestroyPlaceholder();
+            card.ReturnToHand(); // возвращаем карту в руку
             return;
         }
 
-        int insertIndex = placeholder != null ? placeholder.transform.GetSiblingIndex() : slotPanel.childCount;
+    int insertIndex = placeholder.transform.GetSiblingIndex();
 
-        // создаём существо на поле
-        GameObject go = Instantiate(card.data.creaturePrefab, slotPanel);
-        go.transform.SetSiblingIndex(insertIndex);
+    // создаём существо
+    GameObject go = Instantiate(card.data.creaturePrefab, slotPanel);
+    go.transform.SetSiblingIndex(insertIndex);
 
-        CreatureInstance creature = go.GetComponent<CreatureInstance>();
-        if (creature != null)
-        {
-            // теперь передаем ссылку на CardData
-            creature.Initialize(card.data.attack, card.data.health, false, card.data);
-        }
-
-        currentCount++;
-        Destroy(card.gameObject);
-
-        DestroyPlaceholder();
+    CreatureInstance creature = go.GetComponent<CreatureInstance>();
+    if (creature != null)
+    {
+        creature.Initialize(card.data.attack, card.data.health, false, card.data);
     }
+
+    currentCount++;
+    Destroy(card.gameObject);
+
+    DestroyPlaceholder();
+}
+
 
     // Получаем список всех живых существ в этом слоте
     public List<CreatureInstance> GetCreatures()

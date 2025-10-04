@@ -7,7 +7,7 @@ public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
     private Transform originalParent;
     private CardSlot currentSlot;
     public CardData data;
-    
+
     private void Awake()
     {
         canvasGroup = GetComponent<CanvasGroup>();
@@ -51,4 +51,12 @@ public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             transform.localPosition = Vector3.zero;
         }
     }
+
+    public void ReturnToHand()
+{
+    // просто возвращаем позицию в панели руки
+    transform.SetParent(DeckManager.Instance.handPanel);
+    transform.localPosition = Vector3.zero;
+}
+
 }

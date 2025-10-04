@@ -486,8 +486,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentHP: 0
   attack: 0
+  cardData: {fileID: 0}
   hpText: {fileID: 7064482928023302411}
   atkText: {fileID: 7480966706835952594}
+  creatureImage: {fileID: 1424818654043822703}
+  isEnemy: 0
 --- !u!225 &1069568342112049925
 CanvasGroup:
   m_ObjectHideFlags: 0
