@@ -9,19 +9,19 @@ public class CreatureInstance : MonoBehaviour
     public int attack;
 
     [Header("Данные карты")]
-    public CardData cardData; // ссылка на карту, из которой создано существо
+    public CardData cardData; 
     public AbilityType ability = AbilityType.None;
 
     [Header("UI (опционально)")]
     public TMP_Text hpText;
     public TMP_Text atkText;
-    public Image creatureImage; // сюда перетащи Image врага/существа
+    public Image creatureImage;
 
     [Header("Иконка замены")]
-    public GameObject skullIcon; // сюда перетащи иконку-черепок из Canvas в префабе
+    public GameObject skullIcon;
 
     [Header("Принадлежность")]
-    public bool isEnemy; // true = враг, false = игрок
+    public bool isEnemy; 
 
     public bool isDead => currentHP <= 0;
 
@@ -33,10 +33,10 @@ public class CreatureInstance : MonoBehaviour
             originalColor = creatureImage.color;
 
         if (skullIcon != null)
-            skullIcon.SetActive(false); // по умолчанию скрыт
+            skullIcon.SetActive(false);
     }
 
-    // Инициализация при создании
+    // Инициализация
     public void Initialize(int atk, int hp, bool enemy = false, CardData data = null)
     {
         attack = atk;
@@ -54,7 +54,7 @@ public class CreatureInstance : MonoBehaviour
             skullIcon.SetActive(false);
     }
 
-    // === Управление черепком (для CardSlot) ===
+    // === Управление черепком ===
     public void ShowSkullIcon()
     {
         if (skullIcon != null)
@@ -67,25 +67,24 @@ public class CreatureInstance : MonoBehaviour
             skullIcon.SetActive(false);
     }
 
-// Применение бафа
-public void ApplyBuff(int atkDelta, int hpDelta)
-{
-    attack += atkDelta;
-    currentHP += hpDelta;
+    // === Баф ===
+    public void ApplyBuff(int atkDelta, int hpDelta)
+    {
+        attack += atkDelta;
+        currentHP += hpDelta;
 
-    Debug.Log($"{name} получил баф: atk+{atkDelta}, hp+{hpDelta}");
+        Debug.Log($"{name} получил баф: atk+{atkDelta}, hp+{hpDelta}");
 
-    UpdateUI();
+        UpdateUI();
 
-    if (atkDelta != 0 && atkText != null)
-        StartCoroutine(BuffFlash(atkText, Color.green, 0.3f));
+        if (atkDelta != 0 && atkText != null)
+            StartCoroutine(BuffFlash(atkText, Color.green, 0.3f));
 
-    if (hpDelta != 0 && hpText != null)
-        StartCoroutine(BuffFlash(hpText, Color.green, 0.3f));
-}
+        if (hpDelta != 0 && hpText != null)
+            StartCoroutine(BuffFlash(hpText, Color.green, 0.3f));
+    }
 
-
-    // Получение урона
+    // === Урон ===
     public void TakeDamage(int dmg)
     {
         currentHP -= dmg;
@@ -97,8 +96,8 @@ public void ApplyBuff(int atkDelta, int hpDelta)
         else
         {
             UpdateUI();
-            StartCoroutine(Shake(0.2f, 5f));     // тряска (UI, локальные координаты)
-            StartCoroutine(HitFlash(0.15f));     // красная вспышка
+            StartCoroutine(Shake(0.2f, 5f));
+            StartCoroutine(HitFlash(0.15f));
         }
     }
 
@@ -108,7 +107,6 @@ public void ApplyBuff(int atkDelta, int hpDelta)
 
         if (!isEnemy && cardData != null)
         {
-            // только игрок возвращает карту в сброс
             DeckManager.Instance.DiscardCard(cardData);
         }
 
@@ -121,11 +119,11 @@ public void ApplyBuff(int atkDelta, int hpDelta)
         if (atkText != null) atkText.text = attack.ToString();
     }
 
-    // === Процедурная анимация атаки ===
-    public IEnumerator DoAttackAnimation(bool isEnemyAttack)
+    // === Атака ===
+    public IEnumerator DoAttackAnimation(bool isEnemyAttack, float battleDelay = 0f)
     {
         Vector3 startPos = transform.localPosition;
-        Vector3 targetPos = startPos + (isEnemyAttack ? Vector3.left : Vector3.right) * 50f; // рывок в сторону
+        Vector3 targetPos = startPos + (isEnemyAttack ? Vector3.left : Vector3.right) * 50f;
 
         float t = 0;
         while (t < 1f)
@@ -135,11 +133,14 @@ public void ApplyBuff(int atkDelta, int hpDelta)
             yield return null;
         }
 
-        transform.localPosition = startPos; // возвращаем на место
+        transform.localPosition = startPos;
+
+        if (battleDelay > 0f)
+            yield return new WaitForSeconds(battleDelay);
     }
 
-    // === Тряска при уроне ===
-    public IEnumerator Shake(float duration, float magnitude)
+    // === Тряска ===
+    public IEnumerator Shake(float duration, float magnitude, float battleDelay = 0f)
     {
         Vector3 originalPos = transform.localPosition;
         float elapsed = 0f;
@@ -156,10 +157,13 @@ public void ApplyBuff(int atkDelta, int hpDelta)
         }
 
         transform.localPosition = originalPos;
+
+        if (battleDelay > 0f)
+            yield return new WaitForSeconds(battleDelay);
     }
 
-    // === Вспышка при получении урона ===
-    private IEnumerator HitFlash(float duration)
+    // === Вспышка урона ===
+    private IEnumerator HitFlash(float duration, float battleDelay = 0f)
     {
         if (creatureImage != null)
         {
@@ -167,15 +171,20 @@ public void ApplyBuff(int atkDelta, int hpDelta)
             yield return new WaitForSeconds(duration);
             creatureImage.color = originalColor;
         }
+
+        if (battleDelay > 0f)
+            yield return new WaitForSeconds(battleDelay);
     }
     
-    // === Вспышка при получении бафа ===
-    // универсальный метод подсветки конкретного текста
-    private IEnumerator BuffFlash(TMP_Text textElement, Color flashColor, float duration)
+    // === Вспышка бафа ===
+    private IEnumerator BuffFlash(TMP_Text textElement, Color flashColor, float duration, float battleDelay = 0f)
     {
         Color original = textElement.color;
         textElement.color = flashColor;
         yield return new WaitForSeconds(duration);
         textElement.color = original;
+
+        if (battleDelay > 0f)
+            yield return new WaitForSeconds(battleDelay);
     }
 }

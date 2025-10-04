@@ -74,7 +74,7 @@ public class BattleManager : MonoBehaviour
                     else
                     {
                         // атака напрямую по игроку
-                        yield return StartCoroutine(attacker.DoAttackAnimation(true));
+                        yield return StartCoroutine(attacker.DoAttackAnimation(true, battleDelay));
                         playerHealth.TakeDamage(attacker.attack);
                         if (playerHealth.currentHealth <= 0)
                         {
@@ -108,12 +108,12 @@ public class BattleManager : MonoBehaviour
     {
         if (attacker == null || target == null || attacker.isDead || target.isDead) yield break;
 
-        // --- сперва способности ---
+        // сперва способности
         yield return StartCoroutine(TriggerAbilities(attacker));
 
-        // --- потом атака ---
+        // потом атака
         Debug.Log($"{attacker.name} атакует {target.name}");
-        yield return StartCoroutine(attacker.DoAttackAnimation(isEnemyAttack));
+        yield return StartCoroutine(attacker.DoAttackAnimation(isEnemyAttack, battleDelay));
 
         target.TakeDamage(attacker.attack);
         if (target.isDead)
@@ -128,7 +128,7 @@ public class BattleManager : MonoBehaviour
         Debug.Log($"[{unit.name}] Активирует способность: {unit.ability}");
 
         // сам юзер трясётся первым
-        yield return unit.StartCoroutine(unit.Shake(0.25f, 7f));
+        yield return unit.StartCoroutine(unit.Shake(0.25f, 7f, battleDelay));
 
         ICreatureSlot slot = unit.isEnemy ? (ICreatureSlot)enemySlot : playerSlot;
         var allies = slot.GetCreatures();
@@ -170,7 +170,6 @@ public class BattleManager : MonoBehaviour
             case AbilityType.BuffBackAllATK1:
                 if (unit.isEnemy)
                 {
-                    // враг: бафаем справа
                     for (int i = index + 1; i < allies.Count; i++)
                         if (allies[i] != null)
                         {
@@ -180,7 +179,6 @@ public class BattleManager : MonoBehaviour
                 }
                 else
                 {
-                    // игрок: бафаем слева
                     for (int i = index - 1; i >= 0; i--)
                         if (allies[i] != null)
                         {
@@ -212,53 +210,42 @@ public class BattleManager : MonoBehaviour
                 break;
         }
 
-
-        // --- теперь трясём и подсвечиваем всех получивших эффект одновременно ---
+        // теперь трясём всех получивших эффект
         List<Coroutine> running = new List<Coroutine>();
         foreach (var ally in affected)
         {
             if (ally != null)
             {
-                running.Add(ally.StartCoroutine(ally.Shake(0.2f, 5f)));
+                running.Add(ally.StartCoroutine(ally.Shake(0.2f, 5f, battleDelay)));
             }
         }
 
-        // ждём пока все закончат
         foreach (var c in running)
             yield return c;
+
+        // задержка после применения абилки
+        yield return new WaitForSeconds(battleDelay);
     }
 
     // получить "переднего" соседа
     private CreatureInstance GetFrontAlly(List<CreatureInstance> allies, int index, bool isEnemy)
     {
         if (isEnemy)
-        {
-            // враг: передний = слева
             return (index > 0) ? allies[index - 1] : null;
-        }
         else
-        {
-            // игрок: передний = справа
             return (index < allies.Count - 1) ? allies[index + 1] : null;
-        }
     }
 
     // получить "заднего" соседа
     private CreatureInstance GetBackAlly(List<CreatureInstance> allies, int index, bool isEnemy)
     {
         if (isEnemy)
-        {
-            // враг: задний = справа
             return (index < allies.Count - 1) ? allies[index + 1] : null;
-        }
         else
-        {
-            // игрок: задний = слева
             return (index > 0) ? allies[index - 1] : null;
-        }
     }
 
-    // --- выбрать живого ---
+    // выбрать живого
     private CreatureInstance GetNextAlive(List<CreatureInstance> order, ref int index)
     {
         while (index < order.Count)

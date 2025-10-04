@@ -2304,7 +2304,7 @@ MonoBehaviour:
   enemyWaves:
   - enemies:
     - {fileID: 11400000, guid: d26dc03ee0044d540a11458a1a318bd8, type: 2}
-    - {fileID: 11400000, guid: d26dc03ee0044d540a11458a1a318bd8, type: 2}
+    - {fileID: 11400000, guid: 2b23c0d496625854693fc93b8f2a5874, type: 2}
     - {fileID: 11400000, guid: d26dc03ee0044d540a11458a1a318bd8, type: 2}
   - enemies:
     - {fileID: 11400000, guid: 22ed3ab63d75e594e8ef44cc2e5cb620, type: 2}
@@ -2333,7 +2333,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerSlot: {fileID: 1742783202}
   enemySlot: {fileID: 729242364}
-  battleDelay: 1
+  battleDelay: 5
   isPaused: 0
 --- !u!114 &1478080828
 MonoBehaviour:
@@ -2352,10 +2352,6 @@ MonoBehaviour:
   rewardPanelUI: {fileID: 1946625996}
   rewardPool:
   - {fileID: 11400000, guid: 41d275eb0c2a37c40b3d9be0f7f78d59, type: 2}
-  - {fileID: 11400000, guid: 9cf738df9703229499c4654f6633cde0, type: 2}
-  - {fileID: 11400000, guid: d8d0a15e4a30b9b408eb5dff228458c8, type: 2}
-  - {fileID: 11400000, guid: 454a1276d52eb9b45ae639e93eedaeae, type: 2}
-  - {fileID: 11400000, guid: 22ed3ab63d75e594e8ef44cc2e5cb620, type: 2}
 --- !u!1 &1498013605
 GameObject:
   m_ObjectHideFlags: 0
