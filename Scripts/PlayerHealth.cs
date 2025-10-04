@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -11,6 +10,8 @@ public class PlayerHealth : MonoBehaviour
     [Header("UI")]
     public Slider healthSlider;
 
+    private GameManager gameManager;
+
     private void Start()
     {
         currentHealth = maxHealth;
@@ -20,6 +21,8 @@ public class PlayerHealth : MonoBehaviour
             healthSlider.maxValue = maxHealth;
             healthSlider.value = currentHealth;
         }
+
+        gameManager = FindObjectOfType<GameManager>();
     }
 
     public void TakeDamage(int dmg)
@@ -33,7 +36,8 @@ public class PlayerHealth : MonoBehaviour
         if (currentHealth <= 0)
         {
             Debug.Log("Игрок проиграл!");
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex); // перезапуск сцены
+            if (gameManager != null)
+                gameManager.OnBattleLost();
         }
     }
 }
