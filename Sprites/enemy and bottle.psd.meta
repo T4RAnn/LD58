@@ -40,7 +40,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 1
+    filterMode: 0
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -78,7 +78,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 1
     allowsAlphaSplitting: 0
@@ -388,6 +388,138 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_13
+      rect:
+        serializedVersion: 2
+        x: 588
+        y: 1666
+        width: 785
+        height: 71
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 49, y: 10, z: 48, w: 8}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 814f362d97e79de468a3ad81600574a3
+      internalID: 495588681
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_14
+      rect:
+        serializedVersion: 2
+        x: 594
+        y: 1592
+        width: 773
+        height: 51
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 43, y: 0, z: 41, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3f3d0316afb79824fa648e8a245d0be7
+      internalID: -2015234964
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_15
+      rect:
+        serializedVersion: 2
+        x: 1556
+        y: 1665
+        width: 83
+        height: 80
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 000df1b17fc19ce4eafc0f5c78ba6673
+      internalID: 438823014
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_16
+      rect:
+        serializedVersion: 2
+        x: 1790
+        y: 1656
+        width: 72
+        height: 94
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: df470b4d109f0b445b3dc0850e834a8e
+      internalID: -889993463
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_17
+      rect:
+        serializedVersion: 2
+        x: 1783
+        y: 1803
+        width: 95
+        height: 87
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c1d17723a2c82314baa3503839a510d6
+      internalID: 870839794
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_18
+      rect:
+        serializedVersion: 2
+        x: 1549
+        y: 1807
+        width: 95
+        height: 87
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7dd59eb37f4e10c43a0745eaa01b78fc
+      internalID: 432826505
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     customData: 
     physicsShape: []
@@ -407,6 +539,12 @@ TextureImporter:
       enemy and bottle_10: 1232804391
       enemy and bottle_11: 1802146860
       enemy and bottle_12: -768159839
+      enemy and bottle_13: 495588681
+      enemy and bottle_14: -2015234964
+      enemy and bottle_15: 438823014
+      enemy and bottle_16: -889993463
+      enemy and bottle_17: 870839794
+      enemy and bottle_18: 432826505
       enemy and bottle_2: -1757980315
       enemy and bottle_3: -2087586579
       enemy and bottle_4: 1606953908
@@ -416,7 +554,7 @@ TextureImporter:
       enemy and bottle_8: 387159280
       enemy and bottle_9: -468084795
   mipmapLimitGroupName: 
-  pSDRemoveMatte: 0
+  pSDRemoveMatte: 1
   userData: 
   assetBundleName: 
   assetBundleVariant: 
