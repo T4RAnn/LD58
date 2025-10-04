@@ -41,14 +41,18 @@ public class GameManager : MonoBehaviour
         deckManager.DrawCards(cardsPerTurn);
     }
 
-    public void EndTurn()
-    {
-        if (!isPlayerTurn) return;
-        isPlayerTurn = false;
+public void EndTurn()
+{
+    if (!isPlayerTurn) return;
+    isPlayerTurn = false;
 
-        if (battleRoutine != null) StopCoroutine(battleRoutine);
-        battleRoutine = StartCoroutine(AutoBattle());
-    }
+    // Сбросить все карты из руки в discard с анимацией
+    deckManager.EndTurn();
+
+    if (battleRoutine != null) StopCoroutine(battleRoutine);
+    battleRoutine = StartCoroutine(AutoBattle());
+}
+
 
     private void SpawnEnemies()
     {
