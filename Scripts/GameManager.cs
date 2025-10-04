@@ -1,11 +1,14 @@
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections;
 using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
+    [Header("Основные менеджеры")]
     public DeckManager deckManager;
+    public BattleManager battleManager;
+
+    [Header("Слоты")]
     public CardSlot playerSlot;
     public EnemySlot enemySlot;
 
@@ -19,10 +22,6 @@ public class GameManager : MonoBehaviour
     public Button pauseButton;
     public Button normalButton;
     public Button fastButton;
-
-    private Coroutine battleRoutine;
-    private float battleDelay = 1.0f; // задержка по умолчанию (обычный режим)
-    private bool isPaused = false;
 
     private void Start()
     {
@@ -41,18 +40,17 @@ public class GameManager : MonoBehaviour
         deckManager.DrawCards(cardsPerTurn);
     }
 
-public void EndTurn()
-{
-    if (!isPlayerTurn) return;
-    isPlayerTurn = false;
+    public void EndTurn()
+    {
+        if (!isPlayerTurn) return;
+        isPlayerTurn = false;
 
-    // Сбросить все карты из руки в discard с анимацией
-    deckManager.EndTurn();
+        // Сбросить все карты из руки в discard
+        deckManager.EndTurn();
 
-    if (battleRoutine != null) StopCoroutine(battleRoutine);
-    battleRoutine = StartCoroutine(AutoBattle());
-}
-
+        // запускаем автобой
+        battleManager.StartBattle();
+    }
 
     private void SpawnEnemies()
     {
@@ -66,100 +64,24 @@ public void EndTurn()
         }
     }
 
-    private IEnumerator AutoBattle()
-    {
-        Debug.Log("=== Автобой начался ===");
-
-        int round = 0;
-
-        while (playerSlot.GetCreatures().Count > 0 && enemySlot.GetCreatures().Count > 0)
-        {
-            // ждём пока пауза не снимется
-            while (isPaused)
-                yield return null;
-
-            List<CreatureInstance> playerCreatures = playerSlot.GetCreatures();
-            List<CreatureInstance> enemyCreatures = enemySlot.GetCreatures();
-
-            // сортировка
-            playerCreatures.Sort((a, b) => b.transform.GetSiblingIndex().CompareTo(a.transform.GetSiblingIndex()));
-            enemyCreatures.Sort((a, b) => a.transform.GetSiblingIndex().CompareTo(b.transform.GetSiblingIndex()));
-
-            if (round % 2 == 0) // игрок
-            {
-                if (playerCreatures.Count > 0 && enemyCreatures.Count > 0)
-                {
-                    Attack(playerCreatures[0], enemyCreatures[0]);
-                }
-            }
-            else // враг
-            {
-                if (enemyCreatures.Count > 0 && playerCreatures.Count > 0)
-                {
-                    Attack(enemyCreatures[0], playerCreatures[0]);
-                }
-            }
-
-            round++;
-            yield return new WaitForSeconds(battleDelay);
-        }
-
-        // результат
-        if (playerSlot.GetCreatures().Count > 0)
-            Debug.Log("Победа игрока!");
-        else if (enemySlot.GetCreatures().Count > 0)
-            Debug.Log("Победа врага!");
-        else
-            Debug.Log("Ничья!");
-
-        Debug.Log("=== Автобой завершён ===");
-
-        yield return new WaitForSeconds(1f);
-        StartPlayerTurn();
-    }
-
-private void Attack(CreatureInstance attacker, CreatureInstance target)
-{
-    if (attacker == null || target == null || attacker.isDead || target.isDead) return;
-
-    Debug.Log($"{attacker.name} атакует {target.name}");
-
-    StartCoroutine(AttackRoutine(attacker, target));
-}
-
-private IEnumerator AttackRoutine(CreatureInstance attacker, CreatureInstance target)
-{
-    // анимация движения
-    yield return StartCoroutine(attacker.DoAttackAnimation(target.transform));
-
-    // урон
-    target.TakeDamage(attacker.attack);
-
-    if (target.isDead)
-    {
-        Destroy(target.gameObject);
-    }
-}
-
-
     // --- Кнопки управления ---
     private void TogglePause()
     {
-        isPaused = !isPaused;
-        Debug.Log(isPaused ? "Бой на паузе" : "Бой продолжается");
+        battleManager.isPaused = !battleManager.isPaused;
+        Debug.Log(battleManager.isPaused ? "Бой на паузе" : "Бой продолжается");
     }
 
     private void SetNormalMode()
     {
-        battleDelay = 1.0f; // медленно, чтобы видно было
-        isPaused = false;
+        battleManager.battleDelay = 1.0f;
+        battleManager.isPaused = false;
         Debug.Log("Обычный режим скорости");
     }
 
     private void SetFastMode()
     {
-        battleDelay = 0.25f; // ускоренный
-        isPaused = false;
+        battleManager.battleDelay = 0.25f;
+        battleManager.isPaused = false;
         Debug.Log("Ускоренный режим скорости");
     }
 }

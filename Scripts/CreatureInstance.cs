@@ -16,6 +16,9 @@ public class CreatureInstance : MonoBehaviour
     public TMP_Text atkText;
     public Image creatureImage; // сюда перетащи Image врага/существа
 
+    [Header("Иконка замены")]
+    public GameObject skullIcon; // сюда перетащи иконку-черепок из Canvas в префабе
+
     [Header("Принадлежность")]
     public bool isEnemy; // true = враг, false = игрок
 
@@ -27,6 +30,9 @@ public class CreatureInstance : MonoBehaviour
     {
         if (creatureImage != null)
             originalColor = creatureImage.color;
+
+        if (skullIcon != null)
+            skullIcon.SetActive(false); // по умолчанию скрыт
     }
 
     // Инициализация при создании
@@ -37,6 +43,22 @@ public class CreatureInstance : MonoBehaviour
         isEnemy = enemy;
         cardData = data; // сохраняем ссылку на карту
         UpdateUI();
+
+        if (skullIcon != null)
+            skullIcon.SetActive(false);
+    }
+
+    // === Управление черепком (для CardSlot) ===
+    public void ShowSkullIcon()
+    {
+        if (skullIcon != null)
+            skullIcon.SetActive(true);
+    }
+
+    public void HideSkullIcon()
+    {
+        if (skullIcon != null)
+            skullIcon.SetActive(false);
     }
 
     // Получение урона
@@ -76,31 +98,22 @@ public class CreatureInstance : MonoBehaviour
     }
 
     // === Процедурная анимация атаки ===
-    public IEnumerator DoAttackAnimation(Transform target)
+public IEnumerator DoAttackAnimation(bool isEnemyAttack)
+{
+    Vector3 startPos = transform.localPosition;
+    Vector3 targetPos = startPos + (isEnemyAttack ? Vector3.left : Vector3.right) * 50f; // рывок в сторону
+
+    float t = 0;
+    while (t < 1f)
     {
-        Vector3 originalPos = transform.localPosition;
-        Vector3 targetPos = transform.localPosition + (target.localPosition - transform.localPosition) * 0.3f;
-
-        float t = 0f;
-        // движение к цели
-        while (t < 1f)
-        {
-            t += Time.deltaTime * 5f; // скорость
-            transform.localPosition = Vector3.Lerp(originalPos, targetPos, t);
-            yield return null;
-        }
-
-        yield return new WaitForSeconds(0.1f);
-
-        t = 0f;
-        // возврат назад
-        while (t < 1f)
-        {
-            t += Time.deltaTime * 5f;
-            transform.localPosition = Vector3.Lerp(targetPos, originalPos, t);
-            yield return null;
-        }
+        t += Time.deltaTime * 5f; 
+        transform.localPosition = Vector3.Lerp(startPos, targetPos, Mathf.Sin(t * Mathf.PI)); 
+        yield return null;
     }
+
+    transform.localPosition = startPos; // возвращаем на место
+}
+
 
     // === Тряска при уроне ===
     private IEnumerator Shake(float duration, float magnitude)

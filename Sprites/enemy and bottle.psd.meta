@@ -111,7 +111,7 @@ TextureImporter:
         width: 300
         height: 424
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -133,7 +133,7 @@ TextureImporter:
         width: 241
         height: 227
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -146,11 +146,253 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_2
+      rect:
+        serializedVersion: 2
+        x: 175
+        y: 722
+        width: 376
+        height: 144
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 51a782abcd789414699b58a6611908e2
+      internalID: -1757980315
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_3
+      rect:
+        serializedVersion: 2
+        x: 180
+        y: 557
+        width: 373
+        height: 151
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d25a916ba5353894c9d8321c20edd9a6
+      internalID: -2087586579
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_4
+      rect:
+        serializedVersion: 2
+        x: 178
+        y: 400
+        width: 368
+        height: 144
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e91c755a7b8c6f84eb6415423d37952e
+      internalID: 1606953908
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_5
+      rect:
+        serializedVersion: 2
+        x: 685
+        y: 678
+        width: 118
+        height: 118
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b05de2c184e497e4dbd503d3e8083d76
+      internalID: 1366723808
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_6
+      rect:
+        serializedVersion: 2
+        x: 684
+        y: 552
+        width: 119
+        height: 115
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d491715e0c240334da5f38caf982fce4
+      internalID: -1966585145
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_7
+      rect:
+        serializedVersion: 2
+        x: 685
+        y: 413
+        width: 122
+        height: 114
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0319a6c0f16549448b11fd8c5e3bf9a7
+      internalID: -1264763974
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_8
+      rect:
+        serializedVersion: 2
+        x: 830
+        y: 697
+        width: 54
+        height: 66
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3bda87c914a91214698c529785eeca7d
+      internalID: 387159280
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_9
+      rect:
+        serializedVersion: 2
+        x: 825
+        y: 575
+        width: 61
+        height: 61
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: eb5c68380d41249449fd67097a9982a0
+      internalID: -468084795
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_10
+      rect:
+        serializedVersion: 2
+        x: 825
+        y: 429
+        width: 69
+        height: 76
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4484905893bfa25488ff386eac0d070c
+      internalID: 1232804391
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_11
+      rect:
+        serializedVersion: 2
+        x: 1085
+        y: 467
+        width: 411
+        height: 417
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a2cbdf495b4961642ae11dfd9550567f
+      internalID: 1802146860
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_12
+      rect:
+        serializedVersion: 2
+        x: 644
+        y: 1153
+        width: 912
+        height: 271
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 58, y: 55, z: 65, w: 48}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e71fd9e32ee338544aa11f1417fadf32
+      internalID: -768159839
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: c1fadb16ee1b44441919b0cc7ee68625
     internalID: 0
     vertices: []
     indices: 
@@ -162,6 +404,17 @@ TextureImporter:
     nameFileIdTable:
       enemy and bottle_0: 3640602746580604733
       enemy and bottle_1: -571423904594484183
+      enemy and bottle_10: 1232804391
+      enemy and bottle_11: 1802146860
+      enemy and bottle_12: -768159839
+      enemy and bottle_2: -1757980315
+      enemy and bottle_3: -2087586579
+      enemy and bottle_4: 1606953908
+      enemy and bottle_5: 1366723808
+      enemy and bottle_6: -1966585145
+      enemy and bottle_7: -1264763974
+      enemy and bottle_8: 387159280
+      enemy and bottle_9: -468084795
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
