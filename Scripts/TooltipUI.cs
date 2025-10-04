@@ -33,8 +33,15 @@ public class TooltipUI : MonoBehaviour
 
     private void Update()
     {
-        if (isVisible && target != null)
+        if (isVisible)
         {
+            // объект уничтожен или выключен → прячем тултип
+            if (target == null || !target.gameObject.activeInHierarchy)
+            {
+                HideTooltip();
+                return;
+            }
+
             UpdatePosition();
         }
     }

@@ -2333,7 +2333,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerSlot: {fileID: 1742783202}
   enemySlot: {fileID: 729242364}
-  battleDelay: 5
+  battleDelay: 1
   isPaused: 0
 --- !u!114 &1478080828
 MonoBehaviour:
