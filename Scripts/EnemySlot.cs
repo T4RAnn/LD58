@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class EnemySlot : MonoBehaviour
+public class EnemySlot : MonoBehaviour, ICreatureSlot
 {
     public List<CreatureInstance> GetCreatures()
     {

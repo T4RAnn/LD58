@@ -103,19 +103,122 @@ public class BattleManager : MonoBehaviour
         gameManager.StartPlayerTurn();
     }
 
-    // --- атака ---
-    private IEnumerator Attack(CreatureInstance attacker, CreatureInstance target, bool isEnemyAttack)
+// --- атака ---
+private IEnumerator Attack(CreatureInstance attacker, CreatureInstance target, bool isEnemyAttack)
+{
+    if (attacker == null || target == null || attacker.isDead || target.isDead) yield break;
+
+    // --- сперва способности ---
+    yield return StartCoroutine(TriggerAbilities(attacker));
+
+    // --- потом атака ---
+    Debug.Log($"{attacker.name} атакует {target.name}");
+    yield return StartCoroutine(attacker.DoAttackAnimation(isEnemyAttack));
+
+    target.TakeDamage(attacker.attack);
+    if (target.isDead)
+        Destroy(target.gameObject);
+}
+
+// --- способности ---
+private IEnumerator TriggerAbilities(CreatureInstance unit)
+{
+    if (unit == null || unit.ability == AbilityType.None) yield break;
+
+    Debug.Log($"[{unit.name}] Активирует способность: {unit.ability}");
+
+    // сам юзер трясётся первым
+    yield return unit.StartCoroutine(unit.Shake(0.25f, 7f));
+
+    ICreatureSlot slot = unit.isEnemy ? (ICreatureSlot)enemySlot : playerSlot;
+    var allies = slot.GetCreatures();
+    int index = allies.IndexOf(unit);
+    if (index == -1) yield break;
+
+    // список тех, кто получит эффект
+    List<CreatureInstance> affected = new List<CreatureInstance>();
+
+    switch (unit.ability)
     {
-        if (attacker == null || target == null || attacker.isDead || target.isDead) yield break;
+        case AbilityType.BuffFrontHP4:
+            if (index > 0 && allies[index - 1] != null)
+            {
+                allies[index - 1].ApplyBuff(0, 4);
+                affected.Add(allies[index - 1]);
+            }
+            break;
 
-        Debug.Log($"{attacker.name} атакует {target.name}");
+        case AbilityType.BuffBackHP5:
+            if (index < allies.Count - 1 && allies[index + 1] != null)
+            {
+                allies[index + 1].ApplyBuff(0, 5);
+                affected.Add(allies[index + 1]);
+            }
+            break;
 
-        yield return StartCoroutine(attacker.DoAttackAnimation(isEnemyAttack));
-        target.TakeDamage(attacker.attack);
+        case AbilityType.BuffBackATK3:
+            if (index < allies.Count - 1 && allies[index + 1] != null)
+            {
+                allies[index + 1].ApplyBuff(3, 0);
+                affected.Add(allies[index + 1]);
+            }
+            break;
 
-        if (target.isDead)
-            Destroy(target.gameObject);
+        case AbilityType.BuffBackAllATK1:
+            for (int i = index + 1; i < allies.Count; i++)
+                if (allies[i] != null)
+                {
+                    allies[i].ApplyBuff(1, 0);
+                    affected.Add(allies[i]);
+                }
+            break;
+
+        case AbilityType.BuffBackAllHP1:
+            for (int i = index + 1; i < allies.Count; i++)
+                if (allies[i] != null)
+                {
+                    allies[i].ApplyBuff(0, 1);
+                    affected.Add(allies[i]);
+                }
+            break;
+
+        case AbilityType.BuffAllHP2:
+            foreach (var ally in allies)
+                if (ally != null)
+                {
+                    ally.ApplyBuff(0, 2);
+                    affected.Add(ally);
+                }
+            break;
+
+        case AbilityType.BuffAllATK1:
+            foreach (var ally in allies)
+                if (ally != null)
+                {
+                    ally.ApplyBuff(1, 0);
+                    affected.Add(ally);
+                }
+            break;
     }
+
+    // --- теперь трясём и подсвечиваем всех получивших эффект одновременно ---
+    List<Coroutine> running = new List<Coroutine>();
+    foreach (var ally in affected)
+    {
+        if (ally != null)
+        {
+            running.Add(ally.StartCoroutine(ally.Shake(0.2f, 5f)));
+            running.Add(ally.StartCoroutine(ally.BuffFlash(0.3f)));
+        }
+    }
+
+    // ждём пока все закончат
+    foreach (var c in running)
+        yield return c;
+}
+
+
+
 
     // --- выбрать живого ---
     private CreatureInstance GetNextAlive(List<CreatureInstance> order, ref int index)
@@ -129,4 +232,9 @@ public class BattleManager : MonoBehaviour
         }
         return null;
     }
+}
+
+public interface ICreatureSlot
+{
+    List<CreatureInstance> GetCreatures();
 }

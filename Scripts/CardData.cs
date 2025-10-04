@@ -1,4 +1,17 @@
+// CardData.cs
 using UnityEngine;
+
+public enum AbilityType
+{
+    None,
+    BuffFrontHP4,
+    BuffBackHP5,
+    BuffBackATK3,
+    BuffBackAllATK1,
+    BuffBackAllHP1,
+    BuffAllHP2,
+    BuffAllATK1
+}
 
 [CreateAssetMenu(fileName = "NewCard", menuName = "Cards/CardData")]
 public class CardData : ScriptableObject
@@ -6,11 +19,14 @@ public class CardData : ScriptableObject
     public string cardName;
 
     [Header("Sprites")]
-    public Sprite jarSprite;       // банка
-    public Sprite creatureInside;  // существо внутри банки
+    public Sprite jarSprite;
+    public Sprite creatureInside;
 
     [Header("Creature Settings")]
-    public GameObject creaturePrefab; // префаб существа
+    public GameObject creaturePrefab;
     public int attack;
     public int health;
+
+    [Header("Ability")]
+    public AbilityType ability = AbilityType.None; // ← укажи способность в инспекторе
 }

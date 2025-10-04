@@ -77,7 +77,7 @@ public class GameManager : MonoBehaviour
 
             GameObject enemyGO = Instantiate(enemyCard.creaturePrefab, enemySlot.transform);
             CreatureInstance creature = enemyGO.GetComponent<CreatureInstance>();
-            creature.Initialize(enemyCard.attack, enemyCard.health, true);
+            creature.Initialize(enemyCard.attack, enemyCard.health, true, enemyCard);
         }
 
         Debug.Log($"Волна {index + 1} началась!");

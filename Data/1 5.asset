@@ -18,3 +18,4 @@ MonoBehaviour:
   creaturePrefab: {fileID: 5209615389429767607, guid: adc96e00978eaa64fbd9dc9a1bd4b176, type: 3}
   attack: 1
   health: 10
+  ability: 7

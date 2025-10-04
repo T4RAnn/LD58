@@ -10,6 +10,7 @@ public class CreatureInstance : MonoBehaviour
 
     [Header("Данные карты")]
     public CardData cardData; // ссылка на карту, из которой создано существо
+    public AbilityType ability = AbilityType.None;
 
     [Header("UI (опционально)")]
     public TMP_Text hpText;
@@ -41,7 +42,12 @@ public class CreatureInstance : MonoBehaviour
         attack = atk;
         currentHP = hp;
         isEnemy = enemy;
-        cardData = data; // сохраняем ссылку на карту
+
+        cardData = data;
+        ability = (cardData != null) ? cardData.ability : AbilityType.None;
+
+        Debug.Log($"Init creature {name} | cardData={(cardData != null ? cardData.cardName : "null")} | ability={ability}");
+
         UpdateUI();
 
         if (skullIcon != null)
@@ -59,6 +65,17 @@ public class CreatureInstance : MonoBehaviour
     {
         if (skullIcon != null)
             skullIcon.SetActive(false);
+    }
+
+    // Применение бафа
+    public void ApplyBuff(int atkDelta, int hpDelta)
+    {
+        attack += atkDelta;
+        currentHP += hpDelta;
+
+        Debug.Log($"{name} получил баф: atk+{atkDelta}, hp+{hpDelta}");
+
+        UpdateUI();
     }
 
     // Получение урона
@@ -91,32 +108,31 @@ public class CreatureInstance : MonoBehaviour
         Destroy(gameObject);
     }
 
-    private void UpdateUI()
+    public void UpdateUI()
     {
         if (hpText != null) hpText.text = currentHP.ToString();
         if (atkText != null) atkText.text = attack.ToString();
     }
 
     // === Процедурная анимация атаки ===
-public IEnumerator DoAttackAnimation(bool isEnemyAttack)
-{
-    Vector3 startPos = transform.localPosition;
-    Vector3 targetPos = startPos + (isEnemyAttack ? Vector3.left : Vector3.right) * 50f; // рывок в сторону
-
-    float t = 0;
-    while (t < 1f)
+    public IEnumerator DoAttackAnimation(bool isEnemyAttack)
     {
-        t += Time.deltaTime * 5f; 
-        transform.localPosition = Vector3.Lerp(startPos, targetPos, Mathf.Sin(t * Mathf.PI)); 
-        yield return null;
+        Vector3 startPos = transform.localPosition;
+        Vector3 targetPos = startPos + (isEnemyAttack ? Vector3.left : Vector3.right) * 50f; // рывок в сторону
+
+        float t = 0;
+        while (t < 1f)
+        {
+            t += Time.deltaTime * 5f;
+            transform.localPosition = Vector3.Lerp(startPos, targetPos, Mathf.Sin(t * Mathf.PI));
+            yield return null;
+        }
+
+        transform.localPosition = startPos; // возвращаем на место
     }
 
-    transform.localPosition = startPos; // возвращаем на место
-}
-
-
     // === Тряска при уроне ===
-    private IEnumerator Shake(float duration, float magnitude)
+    public IEnumerator Shake(float duration, float magnitude)
     {
         Vector3 originalPos = transform.localPosition;
         float elapsed = 0f;
@@ -145,4 +161,17 @@ public IEnumerator DoAttackAnimation(bool isEnemyAttack)
             creatureImage.color = originalColor;
         }
     }
+    
+    // === Вспышка при получении бафа ===
+public IEnumerator BuffFlash(float duration)
+{
+    if (hpText != null) hpText.color = Color.green;
+    if (atkText != null) atkText.color = Color.green;
+
+    yield return new WaitForSeconds(duration);
+
+    if (hpText != null) hpText.color = Color.white;
+    if (atkText != null) atkText.color = Color.white;
+}
+
 }

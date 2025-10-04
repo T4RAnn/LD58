@@ -3,7 +3,7 @@ using UnityEngine.EventSystems;
 using System.Collections.Generic;
 using UnityEngine.UI;
 
-public class CardSlot : MonoBehaviour
+public class CardSlot : MonoBehaviour, ICreatureSlot
 {
     public Transform slotPanel;
     public GameObject placeholderPrefab;
@@ -17,7 +17,6 @@ public class CardSlot : MonoBehaviour
     {
         List<CreatureInstance> creatures = GetCreatures();
 
-        // если слоты заполнены → placeholder не показываем, только подсветка
         if (creatures.Count >= maxCreatures)
         {
             DestroyPlaceholder();
@@ -25,7 +24,6 @@ public class CardSlot : MonoBehaviour
             return;
         }
 
-        // проверяем, наведён ли курсор на слот
         if (!RectTransformUtility.RectangleContainsScreenPoint(
             slotPanel as RectTransform,
             eventData.position,
@@ -44,7 +42,7 @@ public class CardSlot : MonoBehaviour
         int index = GetInsertIndexClosest(eventData);
         placeholder.transform.SetSiblingIndex(index);
 
-        ClearHighlight(); // если placeholder есть, то подсветку снимаем
+        ClearHighlight();
     }
 
     public void PlaceCard(CardInstance card, PointerEventData eventData)
@@ -60,14 +58,12 @@ public class CardSlot : MonoBehaviour
             {
                 Debug.Log($"Заменяем {hoveredCreature.name} на {card.data.cardName}");
 
-                // в сброс старую карту
                 if (hoveredCreature.cardData != null)
                     DeckManager.Instance.DiscardCard(hoveredCreature.cardData);
 
                 int replaceIndex = hoveredCreature.transform.GetSiblingIndex();
                 Destroy(hoveredCreature.gameObject);
 
-                // создаём нового
                 GameObject go = Instantiate(card.data.creaturePrefab, slotPanel);
                 go.transform.SetSiblingIndex(replaceIndex);
 
@@ -126,12 +122,11 @@ public class CardSlot : MonoBehaviour
                     ClearHighlight();
                     hoveredCreature = target;
                     if (hoveredCreature.skullIcon != null)
-                        hoveredCreature.skullIcon.SetActive(true); // показать черепок
+                        hoveredCreature.skullIcon.SetActive(true);
                 }
                 return;
             }
         }
-
         ClearHighlight();
     }
 
@@ -139,7 +134,7 @@ public class CardSlot : MonoBehaviour
     {
         if (hoveredCreature != null && hoveredCreature.skullIcon != null)
         {
-            hoveredCreature.skullIcon.SetActive(false); // убрать черепок
+            hoveredCreature.skullIcon.SetActive(false);
         }
         hoveredCreature = null;
     }
