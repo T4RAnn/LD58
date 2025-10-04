@@ -373,6 +373,7 @@ GameObject:
   - component: {fileID: 220127300751735197}
   - component: {fileID: 3811979693195677531}
   - component: {fileID: 6510671993496461982}
+  - component: {fileID: -825487586192421088}
   - component: {fileID: 1069568342112049925}
   m_Layer: 5
   m_Name: CreaturePrefab
@@ -427,11 +428,26 @@ MonoBehaviour:
   currentHP: 0
   attack: 0
   cardData: {fileID: 0}
+  ability: 0
   hpText: {fileID: 6647421762177825839}
   atkText: {fileID: 7164197676026777990}
   creatureImage: {fileID: 1424818654043822703}
   skullIcon: {fileID: 1039134439146433746}
   isEnemy: 0
+--- !u!114 &-825487586192421088
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5209615389429767607}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 114f66634e3895d4cafe782cfe4fe23e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  card: {fileID: 0}
+  creature: {fileID: 6510671993496461982}
 --- !u!225 &1069568342112049925
 CanvasGroup:
   m_ObjectHideFlags: 0

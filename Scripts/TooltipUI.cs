@@ -3,36 +3,90 @@ using TMPro;
 
 public class TooltipUI : MonoBehaviour
 {
-    public static TooltipUI Instance; 
+    public static TooltipUI Instance;
 
-    public RectTransform background;
-    public TMP_Text tooltipText;
+    [SerializeField] private RectTransform tooltipPanel; // сам RectTransform панели тултипа
+    [SerializeField] private TMP_Text tooltipText;       // текст тултипа
+    [SerializeField] private Vector2 screenOffset = new Vector2(0, 60); // смещение в пикселях над целью
+
+    private Canvas canvas;
+    private RectTransform canvasRect;
+    private Camera uiCamera;
+    private bool isVisible = false;
+    private Transform target; // цель, над которой показываем тултип
 
     private void Awake()
     {
-        Instance = this;
-        gameObject.SetActive(false);
-    }
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
 
-    public void ShowTooltip(string text)
-    {
-        gameObject.SetActive(true);
-        tooltipText.text = text;
-    }
+        canvas = GetComponentInParent<Canvas>();
+        if (canvas == null) Debug.LogError("TooltipUI: Canvas not found in parents!");
+        canvasRect = canvas.GetComponent<RectTransform>();
 
-    public void HideTooltip()
-    {
-        gameObject.SetActive(false);
+        // камера для конвертаций (null для ScreenSpaceOverlay)
+        uiCamera = (canvas.renderMode == RenderMode.ScreenSpaceOverlay) ? null : canvas.worldCamera;
+
+        if (tooltipPanel != null)
+            tooltipPanel.gameObject.SetActive(false);
     }
 
     private void Update()
     {
-        if (gameObject.activeSelf)
+        if (isVisible && target != null)
         {
-            // следуем за курсором
-            Vector3 pos = Input.mousePosition;
-            pos.z = 0;
-            transform.position = pos;
+            UpdatePosition();
         }
+    }
+
+    public void ShowTooltip(string text, Transform targetTransform)
+    {
+        if (tooltipPanel == null || tooltipText == null) return;
+
+        tooltipText.text = text;
+        target = targetTransform;
+        tooltipPanel.gameObject.SetActive(true);
+        isVisible = true;
+
+        // Немедленно обновить позицию (без задержки)
+        UpdatePosition();
+    }
+
+    public void HideTooltip()
+    {
+        if (tooltipPanel == null) return;
+        tooltipPanel.gameObject.SetActive(false);
+        isVisible = false;
+        target = null;
+    }
+
+    private void UpdatePosition()
+    {
+        if (target == null) return;
+
+        // 1) экранные координаты цели (в пикселях)
+        Vector3 screenPos = RectTransformUtility.WorldToScreenPoint(uiCamera, target.position);
+
+        // применяем пиксельный оффсет (смещение вверх)
+        screenPos += new Vector3(screenOffset.x, screenOffset.y, 0f);
+
+        // 2) конвертируем в локальные координаты Canvas
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            canvasRect, screenPos, uiCamera, out Vector2 localPoint);
+
+        // 3) учтём размер тултипа и ограничим, чтобы тултип не вышел за экран
+        Vector2 anchoredPos = localPoint;
+        Vector2 tooltipSize = tooltipPanel.rect.size;
+        Rect canvasR = canvasRect.rect;
+
+        float minX = canvasR.xMin + tooltipSize.x * tooltipPanel.pivot.x;
+        float maxX = canvasR.xMax - tooltipSize.x * (1f - tooltipPanel.pivot.x);
+        float minY = canvasR.yMin + tooltipSize.y * tooltipPanel.pivot.y;
+        float maxY = canvasR.yMax - tooltipSize.y * (1f - tooltipPanel.pivot.y);
+
+        anchoredPos.x = Mathf.Clamp(anchoredPos.x, minX, maxX);
+        anchoredPos.y = Mathf.Clamp(anchoredPos.y, minY, maxY);
+
+        tooltipPanel.localPosition = anchoredPos;
     }
 }

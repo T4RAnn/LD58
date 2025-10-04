@@ -510,6 +510,7 @@ GameObject:
   - component: {fileID: 220127300751735197}
   - component: {fileID: 3811979693195677531}
   - component: {fileID: 8968866839185092125}
+  - component: {fileID: -3416236383075951336}
   - component: {fileID: 1069568342112049925}
   m_Layer: 5
   m_Name: CardPrefab
@@ -564,6 +565,19 @@ MonoBehaviour:
   data: {fileID: 11400000, guid: d26dc03ee0044d540a11458a1a318bd8, type: 2}
   atkText: {fileID: 5721073407218165113}
   hpText: {fileID: 4831665129544428457}
+--- !u!114 &-3416236383075951336
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5209615389429767607}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 114f66634e3895d4cafe782cfe4fe23e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  card: {fileID: 8968866839185092125}
 --- !u!225 &1069568342112049925
 CanvasGroup:
   m_ObjectHideFlags: 0
