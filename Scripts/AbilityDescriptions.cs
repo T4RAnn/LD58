@@ -13,4 +13,12 @@ public static class AbilityDescriptions
         { AbilityType.BuffAllHP2, "Увеличивает здоровье всех союзников на 2" },
         { AbilityType.BuffAllATK1, "Увеличивает атаку всех союзников на 1" }
     };
+
+    public static string GetDescription(AbilityType ability)
+    {
+        if (Descriptions.TryGetValue(ability, out string desc))
+            return desc;
+
+        return "Нет описания";
+    }
 }

@@ -73,6 +73,7 @@ public class DeckManager : MonoBehaviour
             GameObject cardGO = Instantiate(cardPrefab, handPanel);
             CardInstance card = cardGO.GetComponent<CardInstance>();
             card.data = cardData;
+            card.UpdateUI();   // <<< теперь UI сразу подтянется
 
             hand.Add(card);
         }

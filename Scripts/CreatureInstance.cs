@@ -67,16 +67,23 @@ public class CreatureInstance : MonoBehaviour
             skullIcon.SetActive(false);
     }
 
-    // Применение бафа
-    public void ApplyBuff(int atkDelta, int hpDelta)
-    {
-        attack += atkDelta;
-        currentHP += hpDelta;
+// Применение бафа
+public void ApplyBuff(int atkDelta, int hpDelta)
+{
+    attack += atkDelta;
+    currentHP += hpDelta;
 
-        Debug.Log($"{name} получил баф: atk+{atkDelta}, hp+{hpDelta}");
+    Debug.Log($"{name} получил баф: atk+{atkDelta}, hp+{hpDelta}");
 
-        UpdateUI();
-    }
+    UpdateUI();
+
+    if (atkDelta != 0 && atkText != null)
+        StartCoroutine(BuffFlash(atkText, Color.green, 0.3f));
+
+    if (hpDelta != 0 && hpText != null)
+        StartCoroutine(BuffFlash(hpText, Color.green, 0.3f));
+}
+
 
     // Получение урона
     public void TakeDamage(int dmg)
@@ -163,15 +170,12 @@ public class CreatureInstance : MonoBehaviour
     }
     
     // === Вспышка при получении бафа ===
-public IEnumerator BuffFlash(float duration)
-{
-    if (hpText != null) hpText.color = Color.green;
-    if (atkText != null) atkText.color = Color.green;
-
-    yield return new WaitForSeconds(duration);
-
-    if (hpText != null) hpText.color = Color.white;
-    if (atkText != null) atkText.color = Color.white;
-}
-
+    // универсальный метод подсветки конкретного текста
+    private IEnumerator BuffFlash(TMP_Text textElement, Color flashColor, float duration)
+    {
+        Color original = textElement.color;
+        textElement.color = flashColor;
+        yield return new WaitForSeconds(duration);
+        textElement.color = original;
+    }
 }

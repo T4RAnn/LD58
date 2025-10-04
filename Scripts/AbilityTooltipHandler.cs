@@ -48,7 +48,8 @@ public class AbilityTooltipHandler : MonoBehaviour, IPointerEnterHandler, IPoint
             t = creature.transform;
         }
 
-        if (ability != AbilityType.None && AbilityDescriptions.Descriptions.TryGetValue(ability, out desc))
+        // теперь показывает и для AbilityType.None
+        if (AbilityDescriptions.Descriptions.TryGetValue(ability, out desc))
         {
             if (TooltipUI.Instance != null)
                 TooltipUI.Instance.ShowTooltip(desc, t);
