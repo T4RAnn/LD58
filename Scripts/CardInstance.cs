@@ -1,66 +1,54 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
-[RequireComponent(typeof(CanvasGroup))]
 public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-    public CardData data;
-    public Image jarImage;
-    public Image creatureImage;
-
-    private Transform parentToReturn;
-    private Canvas canvas;
     private CanvasGroup canvasGroup;
-    private RectTransform rectTransform;
-
+    private Transform originalParent;
+    private CardSlot currentSlot;
+    public CardData data;
+    
     private void Awake()
     {
-        rectTransform = GetComponent<RectTransform>();
         canvasGroup = GetComponent<CanvasGroup>();
-        canvas = GetComponentInParent<Canvas>(); // убедись, что карта внутри Canvas
-    }
-
-    private void Start()
-    {
-        if (data != null)
-        {
-            if (jarImage) jarImage.sprite = data.jarSprite;
-            if (creatureImage) creatureImage.sprite = data.creatureInside;
-        }
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        parentToReturn = transform.parent;
-        // Переносим в корневой canvas, чтобы быть над другими элементами
-        transform.SetParent(canvas.transform, true);
-
-        // ВАЖНО: чтобы карта не блокировала raycast на слотах
-        canvasGroup.blocksRaycasts = false;
-        canvasGroup.alpha = 0.95f;
-
-        Debug.Log("Card BeginDrag: " + name);
+        originalParent = transform.parent;
+        canvasGroup.blocksRaycasts = false; // чтобы слот видел дроп
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        rectTransform.position = eventData.position;
+        transform.position = eventData.position;
+
+        // Проверяем, есть ли слот под мышкой
+        if (eventData.pointerEnter != null)
+        {
+            CardSlot slot = eventData.pointerEnter.GetComponentInParent<CardSlot>();
+            if (slot != null)
+            {
+                slot.UpdatePlaceholder(eventData); // говорим слоту, где показать placeholder
+                currentSlot = slot;
+            }
+        }
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        // Включаем raycasts обратно
         canvasGroup.blocksRaycasts = true;
-        canvasGroup.alpha = 1f;
 
-        // Если не был обработан OnDrop (карта все ещё на корневом canvas) — вернуть в руку
-        if (transform.parent == canvas.transform)
+        if (currentSlot != null)
         {
-            transform.SetParent(parentToReturn);
-            rectTransform.localPosition = Vector3.zero;
+            currentSlot.PlaceCard(this, eventData);
+            currentSlot = null;
         }
-
-        Debug.Log("Card EndDrag: " + name);
+        else
+        {
+            // вернём карту назад
+            transform.SetParent(originalParent);
+            transform.localPosition = Vector3.zero;
+        }
     }
 }

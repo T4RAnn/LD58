@@ -6,15 +6,25 @@ public class CreatureInstance : MonoBehaviour
     public int currentHP;
     public int attack;
 
+    [Header("Данные карты")]
+    public CardData cardData; // ссылка на карту, из которой создано существо
+
     [Header("UI (опционально)")]
     public TMP_Text hpText;
     public TMP_Text atkText;
 
+    [Header("Принадлежность")]
+    public bool isEnemy; // true = враг, false = игрок
+
+    public bool isDead => currentHP <= 0;
+
     // Инициализация при создании
-    public void Initialize(int atk, int hp)
+    public void Initialize(int atk, int hp, bool enemy = false, CardData data = null)
     {
         attack = atk;
         currentHP = hp;
+        isEnemy = enemy;
+        cardData = data; // сохраняем ссылку на карту
         UpdateUI();
     }
 
@@ -34,6 +44,14 @@ public class CreatureInstance : MonoBehaviour
 
     private void Die()
     {
+        Debug.Log($"{name} погиб ({(isEnemy ? "враг" : "игрок")})");
+
+        if (!isEnemy && cardData != null)
+        {
+            // только игрок возвращает карту в сброс
+            DeckManager.Instance.DiscardCard(cardData);
+        }
+
         Destroy(gameObject);
     }
 
