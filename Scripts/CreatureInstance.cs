@@ -7,6 +7,7 @@ public class CreatureInstance : MonoBehaviour
 {
     public int currentHP;
     public int attack;
+    public int blockValue = 0; // 👈 блокируемое значение урона
 
     [Header("Данные карты")]
     public CardData cardData;
@@ -82,28 +83,35 @@ public class CreatureInstance : MonoBehaviour
     }
 
     // === Урон ===
-public void TakeDamage(int dmg)
-{
-    if (isDead) return;
-
-    currentHP -= dmg;
-    if (currentHP < 0) currentHP = 0;
-
-    UpdateUI();
-
-    if (currentHP == 0)
+    public void TakeDamage(int dmg)
     {
-        if (isEnemy)
-            StartCoroutine(DeathAnimationEnemy());
+        if (isDead) return;
+
+        // 🔹 Учитываем блок
+        int blocked = Mathf.Min(blockValue, dmg);
+        dmg -= blocked;
+        Debug.Log($"{name} блокирует {blocked} урона!");
+        // НЕ снимаем blockValue полностью, он остаётся до окончания эффекта
+        // blockValue -= blocked; // ← убрать эту строку, если хочешь, чтобы блок срабатывал каждый раз
+
+        currentHP -= dmg;
+        if (currentHP < 0) currentHP = 0;
+
+        UpdateUI();
+
+        if (currentHP == 0)
+        {
+            if (isEnemy)
+                StartCoroutine(DeathAnimationEnemy());
+            else
+                StartCoroutine(DeathAnimationAlly());
+        }
         else
-            StartCoroutine(DeathAnimationAlly());
+        {
+            StartCoroutine(Shake(0.2f, 5f));
+            StartCoroutine(HitFlash(0.15f));
+        }
     }
-    else
-    {
-        StartCoroutine(Shake(0.2f, 5f));
-        StartCoroutine(HitFlash(0.15f));
-    }
-}
 
 // === Враги: сжатие + исчезновение ===
 private IEnumerator DeathAnimationEnemy()

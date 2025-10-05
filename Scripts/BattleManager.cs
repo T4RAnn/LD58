@@ -30,12 +30,12 @@ public class BattleManager : MonoBehaviour
         // Формируем порядок
         List<CreatureInstance> playerOrder = playerSlot.GetCreatures()
             .FindAll(c => c != null && !c.isDead);
-        playerOrder.Sort((a, b) => b.transform.GetSiblingIndex().CompareTo(a.transform.GetSiblingIndex())); 
+        playerOrder.Sort((a, b) => b.transform.GetSiblingIndex().CompareTo(a.transform.GetSiblingIndex()));
         // справа → налево
 
         List<CreatureInstance> enemyOrder = enemySlot.GetCreatures()
             .FindAll(c => c != null && !c.isDead);
-        enemyOrder.Sort((a, b) => a.transform.GetSiblingIndex().CompareTo(b.transform.GetSiblingIndex())); 
+        enemyOrder.Sort((a, b) => a.transform.GetSiblingIndex().CompareTo(b.transform.GetSiblingIndex()));
         // слева → направо
 
         int pIndex = 0;
@@ -106,17 +106,56 @@ public class BattleManager : MonoBehaviour
     // --- атака ---
     private IEnumerator Attack(CreatureInstance attacker, CreatureInstance target, bool isEnemyAttack)
     {
-        if (attacker == null || target == null || attacker.isDead || target.isDead) yield break;
+        if (attacker == null || attacker.isDead) yield break;
+
+        if (target == null || target.isDead)
+        {
+            target = GetNextTarget(isEnemyAttack);
+            if (target == null)
+            {
+                Debug.Log("❌ Нет живых целей для атаки.");
+                yield break;
+            }
+        }
 
         // сперва способности
         yield return StartCoroutine(TriggerAbilities(attacker));
 
-        // потом атака
+        // ⚠️ Если это DoubleAttack — обычную атаку пропускаем
+        if (attacker.ability == AbilityType.DoubleAttack)
+            yield break;
+
+        // обычная атака
         Debug.Log($"{attacker.name} атакует {target.name}");
         yield return StartCoroutine(attacker.DoAttackAnimation(isEnemyAttack));
 
         target.TakeDamage(attacker.attack);
+        yield return new WaitForSeconds(0.2f);
+    }
 
+    private CreatureInstance GetNextTarget(bool isEnemyAttack)
+    {
+        ICreatureSlot targetSlot = isEnemyAttack ? (ICreatureSlot)playerSlot : enemySlot;
+        var list = targetSlot.GetCreatures();
+
+        if (list == null || list.Count == 0)
+            return null;
+
+        // для врагов — бьём правого игрока, для игрока — левого врага
+        if (isEnemyAttack)
+        {
+            for (int i = list.Count - 1; i >= 0; i--)
+                if (list[i] != null && !list[i].isDead)
+                    return list[i];
+        }
+        else
+        {
+            for (int i = 0; i < list.Count; i++)
+                if (list[i] != null && !list[i].isDead)
+                    return list[i];
+        }
+
+        return null;
     }
 
     // --- способности ---
@@ -207,6 +246,27 @@ public class BattleManager : MonoBehaviour
                         }
                 }
                 break;
+
+            // 🔹 Увеличивает себя 1 хп и 1 атк
+            case AbilityType.SelfBuff1HP1ATK:
+                unit.ApplyBuff(1, 1);
+                affected.Add(unit);
+                break;
+
+            // 🔹 Блокирует 1 урон — запоминаем эффект
+            case AbilityType.Block1Damage:
+                unit.StartCoroutine(ApplyTemporaryBlock(unit, 1));
+                break;
+
+            // 🔹 Атакует дважды — просто делаем вторую атаку позже
+            case AbilityType.DoubleAttack:
+                unit.StartCoroutine(DoubleAttack(unit, unit.isEnemy));
+                break;
+
+            // 🔹 Призывает существо перед собой
+            case AbilityType.SummonInFront:
+                unit.StartCoroutine(SummonAllyInFront(unit));
+                break;
         }
 
         // теперь трясём всех получивших эффект
@@ -224,6 +284,96 @@ public class BattleManager : MonoBehaviour
 
         // задержка после применения абилки
         yield return new WaitForSeconds(battleDelay);
+    }
+
+    // --- Временный блок урона ---
+    private IEnumerator ApplyTemporaryBlock(CreatureInstance unit, int amount)
+    {
+        unit.blockValue += amount;
+        Debug.Log($"{unit.name} получает блок {amount} на каждую атаку!");
+        yield return null;
+    }
+
+    // --- Двойная атака ---
+    private IEnumerator DoubleAttack(CreatureInstance unit, bool isEnemy)
+    {
+        Debug.Log($"{unit.name} выполняет двойную атаку!");
+
+        ICreatureSlot targetSlot = isEnemy ? (ICreatureSlot)playerSlot : enemySlot;
+        var targets = targetSlot.GetCreatures();
+
+        if (targets == null || targets.Count == 0)
+            yield break;
+
+        var target = isEnemy ? GetRightmostAlive(targets) : GetLeftmostAlive(targets);
+        if (target == null)
+            yield break;
+
+        yield return StartCoroutine(AttackOnce(unit, target, isEnemy));
+        yield return new WaitForSeconds(0.4f);
+
+        if (target == null || target.isDead)
+        {
+            targets = targetSlot.GetCreatures();
+            target = isEnemy ? GetRightmostAlive(targets) : GetLeftmostAlive(targets);
+            if (target == null)
+            {
+                Debug.Log($"{unit.name} никого не нашёл для второго удара.");
+                yield break;
+            }
+        }
+
+        Debug.Log($"{unit.name} наносит второй удар по {target.name}");
+        yield return StartCoroutine(AttackOnce(unit, target, isEnemy));
+
+        yield return new WaitForSeconds(0.2f);
+    }
+
+    private IEnumerator AttackOnce(CreatureInstance attacker, CreatureInstance target, bool isEnemyAttack)
+    {
+        if (attacker == null || attacker.isDead || target == null || target.isDead)
+            yield break;
+
+        Debug.Log($"{attacker.name} атакует {target.name} (одиночная атака)");
+        yield return StartCoroutine(attacker.DoAttackAnimation(isEnemyAttack));
+
+        target.TakeDamage(attacker.attack);
+
+        yield return new WaitForSeconds(0.2f);
+    }
+
+    // --- Призыв существа перед собой ---
+    private IEnumerator SummonAllyInFront(CreatureInstance summoner)
+    {
+        Debug.Log($"{summoner.name} призывает существо перед собой!");
+        ICreatureSlot slot = summoner.isEnemy ? (ICreatureSlot)enemySlot : playerSlot;
+        var allies = slot.GetCreatures();
+        int index = allies.IndexOf(summoner);
+        if (index == -1) yield break;
+
+        if (summoner.cardData != null && summoner.cardData.creaturePrefab != null)
+        {
+            GameObject prefab = summoner.cardData.creaturePrefab;
+            GameObject newCreature = Instantiate(prefab, summoner.transform.parent);
+            newCreature.transform.SetSiblingIndex(
+                summoner.isEnemy ? index - 1 : index + 1
+            );
+            var instance = newCreature.GetComponent<CreatureInstance>();
+            instance.Initialize(1, 1, summoner.isEnemy);
+            allies.Insert(index + (summoner.isEnemy ? -1 : 1), instance);
+        }
+        yield return new WaitForSeconds(battleDelay);
+    }
+
+    public static CreatureInstance GetExtremeAlly(ICreatureSlot slot, bool leftmost = true)
+    {
+        if (slot == null) return null;
+
+        var list = slot.GetCreatures();
+        if (list == null || list.Count == 0)
+            return null;
+
+        return leftmost ? list[0] : list[list.Count - 1];
     }
 
     // получить "переднего" соседа
@@ -254,6 +404,22 @@ public class BattleManager : MonoBehaviour
             if (unit != null && !unit.isDead)
                 return unit;
         }
+        return null;
+    }
+
+    private CreatureInstance GetLeftmostAlive(List<CreatureInstance> list)
+    {
+        foreach (var c in list)
+            if (c != null && !c.isDead)
+                return c;
+        return null;
+    }
+
+    private CreatureInstance GetRightmostAlive(List<CreatureInstance> list)
+    {
+        for (int i = list.Count - 1; i >= 0; i--)
+            if (list[i] != null && !list[i].isDead)
+                return list[i];
         return null;
     }
 }

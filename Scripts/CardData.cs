@@ -10,7 +10,12 @@ public enum AbilityType
     BuffBackAllATK1,
     BuffBackAllHP1,
     BuffAllHP2,
-    BuffAllATK1
+    BuffAllATK1,
+
+    SelfBuff1HP1ATK,       // Увеличивает себя на 1 хп и 1 атк
+    Block1Damage,          // Блокирует 1 урон
+    DoubleAttack,          // Атакует дважды
+    SummonInFront          // Призывает существо перед собой
 }
 
 [CreateAssetMenu(fileName = "NewCard", menuName = "Cards/CardData")]
