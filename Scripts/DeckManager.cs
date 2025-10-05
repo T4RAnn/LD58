@@ -72,9 +72,14 @@ public class DeckManager : MonoBehaviour
             deck.RemoveAt(0);
 
             // создаём карту у иконки колоды
-            GameObject cardGO = Instantiate(cardPrefab, deckIconTransform.position, Quaternion.identity, handPanel);
+            GameObject cardGO = Instantiate(cardPrefab, handPanel);
             RectTransform rect = cardGO.GetComponent<RectTransform>();
-            rect.anchoredPosition = deckIconTransform.GetComponent<RectTransform>().anchoredPosition;
+
+            // Переводим мировую позицию иконки колоды в локальную позицию руки
+            Vector2 localPos;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(handPanel as RectTransform, deckIconTransform.position, null, out localPos);
+            rect.anchoredPosition = localPos;
+
 
             CardInstance card = cardGO.GetComponent<CardInstance>();
             card.data = cardData;
@@ -114,14 +119,50 @@ public class DeckManager : MonoBehaviour
         rect.localScale = endScale;
     }
 
+    public IEnumerator AnimateToDiscardCard(CardData data, GameObject cardGO)
+    {
+        if (discardPileTransform == null)
+        {
+            Destroy(cardGO);
+            yield break;
+        }
+
+        RectTransform rect = cardGO.GetComponent<RectTransform>();
+        RectTransform discardRect = discardPileTransform.GetComponent<RectTransform>();
+
+        Vector2 startPos = rect.anchoredPosition;
+        Vector2 endPos;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(rect.parent as RectTransform, discardRect.position, null, out endPos);
+
+        float t = 0f;
+        float duration = 0.5f;
+
+        while (t < 1f)
+        {
+            t += Time.deltaTime / duration;
+            float eased = Mathf.SmoothStep(0, 1, t);
+
+            // полёт по дуге
+            Vector2 pos = Vector2.Lerp(startPos, endPos, eased);
+            pos.y += Mathf.Sin(eased * Mathf.PI) * 100f; // дуга
+            rect.anchoredPosition = pos;
+
+            rect.localScale = Vector3.Lerp(Vector3.one, Vector3.zero, eased);
+            yield return null;
+        }
+
+        discardPile.Add(data);
+        Destroy(cardGO);
+    }
+
+    // сброс карты
     // сброс карты
     public void DiscardCard(CardInstance card)
     {
         if (card != null && card.data != null)
         {
-            discardPile.Add(card.data);
-            StartCoroutine(AnimateToDiscard(card));
-            hand.Remove(card);
+            hand.Remove(card); // убираем из руки сразу
+            StartCoroutine(AnimateToDiscardCard(card.data, card.gameObject)); // передаём и данные, и объект
         }
     }
 
@@ -144,34 +185,6 @@ public class DeckManager : MonoBehaviour
         }
 
         hand.Clear();
-    }
-
-    private IEnumerator AnimateToDiscard(CardInstance card)
-    {
-        if (discardPileTransform == null)
-        {
-            Destroy(card.gameObject);
-            yield break;
-        }
-
-        RectTransform rect = card.GetComponent<RectTransform>();
-        RectTransform discardRect = discardPileTransform.GetComponent<RectTransform>();
-
-        Vector2 startPos = rect.anchoredPosition;
-        Vector2 endPos = discardRect.anchoredPosition;
-
-        float t = 0f;
-        float duration = 0.5f;
-
-        while (t < 1f)
-        {
-            t += Time.deltaTime / duration;
-            rect.anchoredPosition = Vector2.Lerp(startPos, endPos, t);
-            rect.localScale = Vector3.Lerp(Vector3.one, Vector3.zero, t);
-            yield return null;
-        }
-
-        Destroy(card.gameObject);
     }
 
     private void ReshuffleDiscardIntoDeck()

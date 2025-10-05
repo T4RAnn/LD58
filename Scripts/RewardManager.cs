@@ -1,29 +1,26 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using System.Collections;
 
 public class RewardManager : MonoBehaviour
 {
     [Header("UI контейнеры")]
-    public Transform rewardContainer;        // куда будут появляться карты-награды
-    public GameObject rewardCardPrefab;      // префаб кнопки/карты для награды
+    public Transform rewardContainer;
+    public GameObject rewardCardPrefab;
 
     [Header("UI Панель награды")]
-    public GameObject rewardPanelUI;         // сама панель наград (объект в Canvas, который можно включать/выключать)
+    public GameObject rewardPanelUI;
 
     [Header("Пул наград")]
-    public List<CardData> rewardPool = new List<CardData>(); // список возможных карт-наград (задаётся в инспекторе или кодом)
+    public List<CardData> rewardPool = new List<CardData>();
 
     private List<CardData> rewardChoices = new List<CardData>();
 
-    /// <summary>
-    /// Показать награды игроку
-    /// </summary>
     public void ShowRewards(List<CardData> customPool = null)
     {
         ClearRewards();
 
-        // если передали кастомный пул → используем его, иначе используем rewardPool
         var pool = (customPool != null && customPool.Count > 0) ? customPool : rewardPool;
 
         rewardChoices.Clear();
@@ -37,7 +34,6 @@ public class RewardManager : MonoBehaviour
             rewardUI.Setup(randomCard, this, i);
         }
 
-        // показать панель наград
         if (rewardPanelUI != null)
             rewardPanelUI.SetActive(true);
     }
@@ -53,35 +49,49 @@ public class RewardManager : MonoBehaviour
             Destroy(child.gameObject);
     }
 
-    /// <summary>
-    /// Когда игрок выбрал карту
-    /// </summary>
-    public void OnCardSelected(CardData chosenCard)
+public void OnCardSelected(RewardCardUI selectedCardUI)
+{
+    if (DeckManager.Instance == null)
     {
-        if (DeckManager.Instance == null)
-        {
-            Debug.LogError("DeckManager.Instance = null! Убедись, что DeckManager есть на сцене.");
-            return;
-        }
+        Debug.LogError("DeckManager.Instance = null!");
+        return;
+    }
 
-        if (DeckManager.Instance.deck == null)
-            DeckManager.Instance.deck = new List<CardData>();
+    // отключаем возможность кликать на карту
+    selectedCardUI.GetComponent<Button>().interactable = false;
 
-        Debug.Log($"Игрок выбрал награду: {chosenCard.cardName}");
-        DeckManager.Instance.deck.Add(chosenCard);
+    // переносим карту на уровень Canvas, чтобы она не зависела от rewardPanelUI
+    Canvas rootCanvas = FindObjectOfType<Canvas>();
+    selectedCardUI.transform.SetParent(rootCanvas.transform, true);
 
-        // скрыть только UI панель, но не сам RewardManager
+    // запускаем анимацию полёта карты + скрытие панели
+    StartCoroutine(AnimateRewardCard(selectedCardUI));
+}
+
+    private IEnumerator AnimateRewardCard(RewardCardUI cardUI)
+    {
+        // анимация полёта карты (можно в колоду или центр экрана)
+        yield return cardUI.StartCoroutine(cardUI.FlyToDeck(DeckManager.Instance.deckIconTransform));
+
+        // скрываем панель награды после окончания анимации
         if (rewardPanelUI != null)
             rewardPanelUI.SetActive(false);
 
-        // показать слоты обратно
+        // добавляем карту в колоду (если не сделано внутри FlyToDeck)
+        DeckManager.Instance.deck.Add(cardUI.cardData);
+
+        Destroy(cardUI.gameObject);
+
+        // включаем слоты обратно
         var gm = FindObjectOfType<GameManager>();
         gm.playerSlot.gameObject.SetActive(true);
         gm.enemySlot.gameObject.SetActive(true);
 
-        // запустить следующую волну
+
+        // запускаем следующую волну и ход
         gm.currentWaveIndex++;
         gm.StartWave(gm.currentWaveIndex);
         gm.StartPlayerTurn();
     }
+
 }

@@ -25,6 +25,8 @@ public class GameManager : MonoBehaviour
     public Button normalButton;
     public Button fastButton;
     public GameObject rewardPanel; // UI панель награды
+    public CanvasGroup fadePanel; // присвоить в инспекторе
+
 
     private void Start()
     {
@@ -113,18 +115,16 @@ public void OnBattleWon()
 // --- Полная очистка всех слотов ---
 private void ClearAllSlots()
 {
-    // --- игрок ---
-    foreach (Transform child in playerSlot.slotPanel)
-    {
-        CreatureInstance creature = child.GetComponent<CreatureInstance>();
-        if (creature != null && creature.cardData != null && !creature.isEnemy)
+        // --- игрок ---
+        foreach (Transform child in playerSlot.slotPanel)
         {
-            // вернуть карту в сброс
-            DeckManager.Instance.DiscardCard(creature.cardData);
+            CreatureInstance creature = child.GetComponent<CreatureInstance>();
+            if (creature != null && !creature.isEnemy && creature.cardData != null)
+            {
+                // запускаем анимацию улета карты в discard
+                DeckManager.Instance.StartCoroutine(DeckManager.Instance.AnimateToDiscardCard(creature.cardData, child.gameObject));
+            }
         }
-
-        Destroy(child.gameObject);
-    }
 
     // --- враги ---
     foreach (Transform child in enemySlot.transform)

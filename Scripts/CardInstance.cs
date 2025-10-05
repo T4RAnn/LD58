@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using TMPro;
 using System.Collections;
+using UnityEngine.UI;
 
 public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
@@ -9,7 +10,7 @@ public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
     private Transform originalParent;
     private CardSlot currentSlot;
 
-    private Vector2 dragOffset; // смещение между курсором и картой
+    private Vector2 dragOffset;
 
     [Header("Данные карты")]
     public CardData data;
@@ -31,7 +32,6 @@ public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         HandLayout.DraggingCard = this;
         HandLayout.Instance.CreatePlaceholder(this);
 
-        // считаем смещение между курсором и картой
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             transform as RectTransform,
             eventData.position,
@@ -52,29 +52,48 @@ public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
         transform.localPosition = localPos - dragOffset;
 
-        // проверяем слот под мышкой
+        // Проверка слота под мышкой
         if (eventData.pointerEnter != null)
         {
             CardSlot slot = eventData.pointerEnter.GetComponentInParent<CardSlot>();
+
             if (slot != null)
             {
-                slot.UpdatePlaceholder(eventData);
-                currentSlot = slot;
+                RectTransform slotRect = slot.slotPanel as RectTransform;
+
+                if (slotRect != null &&
+                    RectTransformUtility.RectangleContainsScreenPoint(slotRect, eventData.position, eventData.pressEventCamera))
+                {
+                    slot.UpdatePlaceholder(eventData);
+                    currentSlot = slot;
+                }
+                else currentSlot = null;
             }
-            else
-            {
-                currentSlot = null;
-            }
+            else currentSlot = null;
         }
+        else currentSlot = null;
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
         canvasGroup.blocksRaycasts = true;
 
+        // Проверяем, осталась ли мышь над слотом при отпускании
         if (currentSlot != null)
         {
-            currentSlot.PlaceCard(this, eventData);
+            RectTransform slotRect = currentSlot.slotPanel as RectTransform;
+            if (slotRect == null ||
+                !RectTransformUtility.RectangleContainsScreenPoint(slotRect, eventData.position, eventData.pressEventCamera))
+            {
+                currentSlot = null;
+            }
+        }
+
+        if (currentSlot != null)
+        {
+            // Плавное перемещение в слот
+            StopAllCoroutines();
+            StartCoroutine(SmoothMoveToSlot(currentSlot));
             currentSlot = null;
         }
         else
@@ -86,11 +105,41 @@ public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         HandLayout.Instance.DestroyPlaceholder();
     }
 
+    private IEnumerator SmoothMoveToSlot(CardSlot slot)
+    {
+        RectTransform cardRect = transform as RectTransform;
+        RectTransform slotRect = slot.slotPanel as RectTransform;
+
+        // Форсируем обновление LayoutGroup слота, чтобы placeholder занял место
+        LayoutRebuilder.ForceRebuildLayoutImmediate(slotRect);
+
+        // Временно ставим карту в тот же родитель, что и плейсхолдер, чтобы локальные координаты совпадали
+        Transform originalParent = cardRect.parent;
+        cardRect.SetParent(slotRect, true); // true — сохраняем мировые координаты
+
+        Vector3 startLocalPos = cardRect.localPosition;
+        Vector3 targetLocalPos = Vector3.zero; // placeholder занимает (0,0) в родителе
+
+        float t = 0f;
+        float duration = 0.2f;
+
+        while (t < 1f)
+        {
+            t += Time.deltaTime / duration;
+            cardRect.localPosition = Vector3.Lerp(startLocalPos, targetLocalPos, Mathf.SmoothStep(0f, 1f, t));
+            yield return null;
+        }
+
+        // Завершаем привязку карты к слоту
+        cardRect.localPosition = targetLocalPos;
+        slot.PlaceCard(this, null);
+    }
+
+
     public void ReturnToHand()
     {
         Transform handPanel = DeckManager.Instance.handPanel;
 
-        // индекс и позиция плейсхолдера
         int targetIndex = handPanel.childCount;
         Vector3 targetPos = handPanel.position;
 
@@ -100,7 +149,6 @@ public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             targetPos = HandLayout.Instance.placeholder.transform.position;
         }
 
-        // временно оставляем карту под тем же Canvas
         transform.SetParent(handPanel.parent);
 
         StopAllCoroutines();
@@ -114,20 +162,16 @@ public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
         while (t < 1f)
         {
-            t += Time.deltaTime * 6f; // скорость анимации
+            t += Time.deltaTime * 6f;
             transform.position = Vector3.Lerp(start, targetPos, t);
             yield return null;
         }
 
-        // в конце закрепляем карту в руке
         transform.SetParent(handPanel);
         transform.SetSiblingIndex(targetIndex);
         transform.position = targetPos;
     }
 
-    /// <summary>
-    /// Обновление UI (атк/хп) на карте
-    /// </summary>
     public void UpdateUI()
     {
         if (data == null) return;

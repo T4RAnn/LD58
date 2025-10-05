@@ -45,67 +45,59 @@ public class CardSlot : MonoBehaviour, ICreatureSlot
     }
 
     // === Размещение карты ===
-    public void PlaceCard(CardInstance card, PointerEventData eventData)
+public void PlaceCard(CardInstance card, PointerEventData eventData)
+{
+    if (card == null || card.data == null) return;
+
+    List<CreatureInstance> creatures = GetCreatures();
+
+    // Слот переполнен → замена существующей карты
+    if (creatures.Count >= maxCreatures)
     {
-        if (card == null || card.data == null) return;
-        List<CreatureInstance> creatures = GetCreatures();
-
-        // слот переполнен
-        if (creatures.Count >= maxCreatures)
+        if (hoveredCreature != null && !hoveredCreature.isDead)
         {
-            if (hoveredCreature != null && !hoveredCreature.isDead)
-            {
-                int replaceIndex = hoveredCreature.transform.GetSiblingIndex();
-                if (hoveredCreature.cardData != null)
-                    DeckManager.Instance.DiscardCard(hoveredCreature.cardData);
+            int replaceIndex = hoveredCreature.transform.GetSiblingIndex();
+            if (hoveredCreature.cardData != null)
+                DeckManager.Instance.DiscardCard(hoveredCreature.cardData);
 
-                Destroy(hoveredCreature.gameObject);
+            Destroy(hoveredCreature.gameObject);
 
-                GameObject go = Instantiate(card.data.creaturePrefab, slotPanel);
-                go.transform.SetSiblingIndex(replaceIndex);
+            GameObject go = Instantiate(card.data.creaturePrefab, slotPanel);
+            go.transform.SetSiblingIndex(replaceIndex);
 
-                CreatureInstance newCreature = go.GetComponent<CreatureInstance>();
-                if (newCreature != null)
-                {
-                    newCreature.Initialize(card.data.attack, card.data.health, false, card.data);
-                    StartCoroutine(newCreature.SpawnAnimationFlyOff());
-                }
+            CreatureInstance newCreature = go.GetComponent<CreatureInstance>();
+            newCreature?.Initialize(card.data.attack, card.data.health, false, card.data);
+            StartCoroutine(newCreature.SpawnAnimationFlyOff());
 
-                Destroy(card.gameObject);
-                DestroyPlaceholder();
-                ClearHighlight();
-                return;
-            }
-
-            Debug.Log("Слот переполнен и нет цели для замены.");
+            Destroy(card.gameObject);
             DestroyPlaceholder();
-            HandLayout.Instance.DestroyPlaceholder();
             ClearHighlight();
             return;
         }
 
-        // обычное добавление
-        if (placeholder == null)
-        {
-            card.ReturnToHand();
-            return;
-        }
-
-        int insertIndex = placeholder.transform.GetSiblingIndex();
-
-        GameObject newGO = Instantiate(card.data.creaturePrefab, slotPanel);
-        newGO.transform.SetSiblingIndex(insertIndex);
-
-        CreatureInstance creature = newGO.GetComponent<CreatureInstance>();
-        if (creature != null)
-        {
-            creature.Initialize(card.data.attack, card.data.health, false, card.data);
-            StartCoroutine(creature.SpawnAnimationFlyOff());
-        }
-
-        Destroy(card.gameObject);
+        // Нет цели для замены → возвращаем карту в руку
+        card.ReturnToHand();
         DestroyPlaceholder();
+        return;
     }
+
+    // Обычное добавление
+    int insertIndex = placeholder != null ? placeholder.transform.GetSiblingIndex() : creatures.Count;
+
+    GameObject newGO = Instantiate(card.data.creaturePrefab, slotPanel);
+    newGO.transform.SetSiblingIndex(insertIndex);
+
+    CreatureInstance creature = newGO.GetComponent<CreatureInstance>();
+    creature?.Initialize(card.data.attack, card.data.health, false, card.data);
+    StartCoroutine(creature.SpawnAnimationFlyOff());
+
+    Destroy(card.gameObject);
+
+    // Убираем placeholder после завершения анимации
+    DestroyPlaceholder();
+    ClearHighlight();
+}
+
 
     // === Подсветка цели замены ===
     private void HighlightCreatureUnderCursor(PointerEventData eventData)

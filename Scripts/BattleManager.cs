@@ -116,8 +116,7 @@ public class BattleManager : MonoBehaviour
         yield return StartCoroutine(attacker.DoAttackAnimation(isEnemyAttack));
 
         target.TakeDamage(attacker.attack);
-        if (target.isDead)
-            Destroy(target.gameObject);
+
     }
 
     // --- способности ---

@@ -82,33 +82,115 @@ public class CreatureInstance : MonoBehaviour
     }
 
     // === Урон ===
-    public void TakeDamage(int dmg)
-    {
-        currentHP -= dmg;
+public void TakeDamage(int dmg)
+{
+    if (isDead) return;
 
-        if (currentHP <= 0)
-        {
-            Die();
-        }
+    currentHP -= dmg;
+    if (currentHP < 0) currentHP = 0;
+
+    UpdateUI();
+
+    if (currentHP == 0)
+    {
+        if (isEnemy)
+            StartCoroutine(DeathAnimationEnemy());
         else
-        {
-            UpdateUI();
-            StartCoroutine(Shake(0.2f, 5f));
-            StartCoroutine(HitFlash(0.15f));
-        }
+            StartCoroutine(DeathAnimationAlly());
     }
-
-    private void Die()
+    else
     {
-        Debug.Log($"{name} погиб ({(isEnemy ? "враг" : "игрок")})");
-
-        if (!isEnemy && cardData != null)
-        {
-            DeckManager.Instance.DiscardCard(cardData);
-        }
-
-        Destroy(gameObject);
+        StartCoroutine(Shake(0.2f, 5f));
+        StartCoroutine(HitFlash(0.15f));
     }
+}
+
+// === Враги: сжатие + исчезновение ===
+private IEnumerator DeathAnimationEnemy()
+{
+    CanvasGroup cg = GetComponent<CanvasGroup>();
+    if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
+    cg.interactable = false;
+    cg.blocksRaycasts = false;
+
+    float duration = 0.6f;
+    float elapsed = 0f;
+    Vector3 originalScale = transform.localScale;
+    Vector3 targetScale = originalScale * 0.3f;
+
+    while (elapsed < duration)
+    {
+        elapsed += Time.deltaTime;
+        float t = elapsed / duration;
+        transform.localScale = Vector3.Lerp(originalScale, targetScale, Mathf.SmoothStep(0, 1, t));
+        cg.alpha = Mathf.Lerp(1f, 0f, t);
+        yield return null;
+    }
+
+    // анимация банки, если есть
+    if (jarObject != null)
+        StartCoroutine(SpawnAnimationFlyOff());
+
+    Destroy(gameObject);
+}
+
+// === Союзники: улетание в сброс ===
+private IEnumerator DeathAnimationAlly()
+{
+    CanvasGroup cg = GetComponent<CanvasGroup>();
+    if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
+    cg.interactable = false;
+    cg.blocksRaycasts = false;
+
+    Transform discardPile = DeckManager.Instance.discardPileTransform; // ссылка на объект сброса
+    if (discardPile == null)
+    {
+        Destroy(gameObject);
+        yield break;
+    }
+
+    Vector3 startPos = transform.position;
+    Vector3 targetPos = discardPile.position;
+    Vector3 originalScale = transform.localScale;
+    Vector3 targetScale = originalScale * 0.5f;
+
+    float duration = 0.8f;
+    float elapsed = 0f;
+
+    // параметры зигзага
+    float zigzagMagnitude = 30f;
+    int zigzagCount = 3;
+
+    while (elapsed < duration)
+    {
+        elapsed += Time.deltaTime;
+        float t = elapsed / duration;
+
+        // движение к сбросу
+        Vector3 basePos = Vector3.Lerp(startPos, targetPos, Mathf.SmoothStep(0, 1, t));
+
+        // добавляем зигзаг по X
+        float zigzagOffset = Mathf.Sin(t * Mathf.PI * zigzagCount) * zigzagMagnitude * (1 - t); // уменьшается к концу
+        transform.position = basePos + new Vector3(zigzagOffset, 0, 0);
+
+        // вращение по Z
+        float rotationZ = Mathf.Lerp(0f, 180f, t); // разворот на 180 градусов по пути
+        transform.rotation = Quaternion.Euler(0, 0, rotationZ);
+
+        // уменьшение и прозрачность
+        transform.localScale = Vector3.Lerp(originalScale, targetScale, t);
+        cg.alpha = Mathf.Lerp(1f, 0f, t);
+
+        yield return null;
+    }
+
+    // дискард карты и удаление объекта
+    if (cardData != null)
+        DeckManager.Instance.DiscardCard(cardData);
+
+    Destroy(gameObject);
+}
+
 
     public void UpdateUI()
     {
