@@ -24,7 +24,9 @@ public class DeckManager : MonoBehaviour
     [Header("Зона сброса (куда летят карты)")]
     public Transform discardPileTransform;
 
-    // текущие карты в руке (объекты)
+    [Header("Иконка колоды (откуда вылетают карты)")]
+    public Transform deckIconTransform;
+
     private readonly List<CardInstance> hand = new List<CardInstance>();
 
     private void Awake()
@@ -36,7 +38,6 @@ public class DeckManager : MonoBehaviour
         }
         Instance = this;
 
-        // скопируем стартовую колоду в рабочую
         deck = new List<CardData>(startingDeck);
         Shuffle(deck);
     }
@@ -70,16 +71,50 @@ public class DeckManager : MonoBehaviour
             CardData cardData = deck[0];
             deck.RemoveAt(0);
 
-            GameObject cardGO = Instantiate(cardPrefab, handPanel);
+            // создаём карту у иконки колоды
+            GameObject cardGO = Instantiate(cardPrefab, deckIconTransform.position, Quaternion.identity, handPanel);
+            RectTransform rect = cardGO.GetComponent<RectTransform>();
+            rect.anchoredPosition = deckIconTransform.GetComponent<RectTransform>().anchoredPosition;
+
             CardInstance card = cardGO.GetComponent<CardInstance>();
             card.data = cardData;
-            card.UpdateUI();   // <<< теперь UI сразу подтянется
+            card.UpdateUI();
 
             hand.Add(card);
+
+            // анимация перелёта из колоды в руку
+            StartCoroutine(AnimateToHand(rect));
         }
     }
 
-    // универсальный метод сброса (с анимацией если есть объект)
+    private IEnumerator AnimateToHand(RectTransform rect)
+    {
+        Vector2 startPos = rect.anchoredPosition;
+        Vector2 endPos = Vector2.zero; // в руке карты раскладываются автоматически LayoutGroup'ом
+        Vector3 startScale = Vector3.zero;
+        Vector3 endScale = Vector3.one;
+
+        rect.localScale = startScale;
+
+        float t = 0f;
+        float duration = 0.5f;
+
+        while (t < 1f)
+        {
+            t += Time.deltaTime / duration;
+            float eased = Mathf.SmoothStep(0, 1, t);
+
+            rect.anchoredPosition = Vector2.Lerp(startPos, endPos, eased);
+            rect.localScale = Vector3.Lerp(startScale, endScale, eased);
+
+            yield return null;
+        }
+
+        rect.anchoredPosition = endPos;
+        rect.localScale = endScale;
+    }
+
+    // сброс карты
     public void DiscardCard(CardInstance card)
     {
         if (card != null && card.data != null)
@@ -90,7 +125,6 @@ public class DeckManager : MonoBehaviour
         }
     }
 
-    // перегрузка: если есть только CardData (например, Creature умерло)
     public void DiscardCard(CardData cardData)
     {
         if (cardData != null)
@@ -100,20 +134,18 @@ public class DeckManager : MonoBehaviour
         }
     }
 
-    // конец хода – сбрасываем всю руку
     public void EndTurn()
     {
         Debug.Log("Конец хода. Все карты из руки уходят в сброс.");
 
         foreach (var card in new List<CardInstance>(hand))
         {
-            DiscardCard(card); // теперь всё через общий метод
+            DiscardCard(card);
         }
 
         hand.Clear();
     }
 
-    // анимация полёта карты в сброс
     private IEnumerator AnimateToDiscard(CardInstance card)
     {
         if (discardPileTransform == null)

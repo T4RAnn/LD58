@@ -9,7 +9,7 @@ public class CreatureInstance : MonoBehaviour
     public int attack;
 
     [Header("Данные карты")]
-    public CardData cardData; 
+    public CardData cardData;
     public AbilityType ability = AbilityType.None;
 
     [Header("UI (опционально)")]
@@ -21,7 +21,10 @@ public class CreatureInstance : MonoBehaviour
     public GameObject skullIcon;
 
     [Header("Принадлежность")]
-    public bool isEnemy; 
+    public bool isEnemy;
+
+    [Header("Банка (внутри префаба)")]
+    public GameObject jarObject;   // 👈 объект банки в самом префабе (скрыт в инспекторе)
 
     public bool isDead => currentHP <= 0;
 
@@ -34,9 +37,12 @@ public class CreatureInstance : MonoBehaviour
 
         if (skullIcon != null)
             skullIcon.SetActive(false);
+
+        if (jarObject != null)
+            jarObject.SetActive(false); // банка скрыта при старте
     }
 
-    // Инициализация
+    // === Инициализация ===
     public void Initialize(int atk, int hp, bool enemy = false, CardData data = null)
     {
         attack = atk;
@@ -55,17 +61,8 @@ public class CreatureInstance : MonoBehaviour
     }
 
     // === Управление черепком ===
-    public void ShowSkullIcon()
-    {
-        if (skullIcon != null)
-            skullIcon.SetActive(true);
-    }
-
-    public void HideSkullIcon()
-    {
-        if (skullIcon != null)
-            skullIcon.SetActive(false);
-    }
+    public void ShowSkullIcon() { if (skullIcon != null) skullIcon.SetActive(true); }
+    public void HideSkullIcon() { if (skullIcon != null) skullIcon.SetActive(false); }
 
     // === Баф ===
     public void ApplyBuff(int atkDelta, int hpDelta)
@@ -120,10 +117,11 @@ public class CreatureInstance : MonoBehaviour
     }
 
     // === Атака ===
-    public IEnumerator DoAttackAnimation(bool isEnemyAttack, float battleDelay = 0f)
+    // === Процедурная анимация атаки ===
+    public IEnumerator DoAttackAnimation(bool isEnemyAttack)
     {
         Vector3 startPos = transform.localPosition;
-        Vector3 targetPos = startPos + (isEnemyAttack ? Vector3.left : Vector3.right) * 50f;
+        Vector3 targetPos = startPos + (isEnemyAttack ? Vector3.left : Vector3.right) * 50f; // рывок в сторону
 
         float t = 0;
         while (t < 1f)
@@ -133,14 +131,11 @@ public class CreatureInstance : MonoBehaviour
             yield return null;
         }
 
-        transform.localPosition = startPos;
-
-        if (battleDelay > 0f)
-            yield return new WaitForSeconds(battleDelay);
+        transform.localPosition = startPos; // возвращаем на место
     }
 
-    // === Тряска ===
-    public IEnumerator Shake(float duration, float magnitude, float battleDelay = 0f)
+    // === Тряска при уроне ===
+    public IEnumerator Shake(float duration, float magnitude)
     {
         Vector3 originalPos = transform.localPosition;
         float elapsed = 0f;
@@ -157,13 +152,10 @@ public class CreatureInstance : MonoBehaviour
         }
 
         transform.localPosition = originalPos;
-
-        if (battleDelay > 0f)
-            yield return new WaitForSeconds(battleDelay);
     }
 
-    // === Вспышка урона ===
-    private IEnumerator HitFlash(float duration, float battleDelay = 0f)
+    // === Вспышка при получении урона ===
+    private IEnumerator HitFlash(float duration)
     {
         if (creatureImage != null)
         {
@@ -171,20 +163,74 @@ public class CreatureInstance : MonoBehaviour
             yield return new WaitForSeconds(duration);
             creatureImage.color = originalColor;
         }
-
-        if (battleDelay > 0f)
-            yield return new WaitForSeconds(battleDelay);
     }
-    
-    // === Вспышка бафа ===
-    private IEnumerator BuffFlash(TMP_Text textElement, Color flashColor, float duration, float battleDelay = 0f)
+
+    // === Вспышка при получении бафа ===
+    public IEnumerator BuffFlash(float duration)
+    {
+        if (hpText != null) hpText.color = Color.green;
+        if (atkText != null) atkText.color = Color.green;
+
+        yield return new WaitForSeconds(duration);
+
+        if (hpText != null) hpText.color = Color.white;
+        if (atkText != null) atkText.color = Color.white;
+    }
+
+    // универсальный метод подсветки конкретного текста
+    private IEnumerator BuffFlash(TMP_Text textElement, Color flashColor, float duration)
     {
         Color original = textElement.color;
         textElement.color = flashColor;
         yield return new WaitForSeconds(duration);
         textElement.color = original;
-
-        if (battleDelay > 0f)
-            yield return new WaitForSeconds(battleDelay);
     }
+
+    // === Анимация банки (встроенной в префаб) ===
+public IEnumerator SpawnAnimationFlyOff(
+    float delayBeforeFall = 0.2f, 
+    float flyDistance = 800f, 
+    float flyDuration = 0.6f)
+{
+    if (jarObject == null)
+        yield break;
+
+    jarObject.SetActive(true);
+
+    RectTransform jarRect = jarObject.GetComponent<RectTransform>();
+    Vector3 startPos = jarRect.localPosition;
+
+    // Монстр сразу виден
+    if (creatureImage != null)
+        creatureImage.color = originalColor;
+    if (atkText != null) atkText.alpha = 1f;
+    if (hpText != null) hpText.alpha = 1f;
+
+    // ⏳ Задержка перед падением
+    yield return new WaitForSeconds(delayBeforeFall);
+
+    // Случайное смещение по X
+    float randomX = Random.Range(-150f, 150f);
+
+    // Цель — далеко за экран вниз
+    Vector3 targetPos = startPos + new Vector3(randomX, -flyDistance, 0);
+
+    // Случайный наклон банки
+    float randomRotation = Random.Range(-40f, 40f);
+
+    float t = 0f;
+    while (t < 1f)
+    {
+        t += Time.deltaTime / flyDuration;
+        float eased = Mathf.Pow(t, 1.7f); // ускорение вниз
+        jarRect.localPosition = Vector3.Lerp(startPos, targetPos, eased);
+        jarRect.rotation = Quaternion.Euler(0, 0, Mathf.Lerp(0, randomRotation, eased));
+        yield return null;
+    }
+
+    // Банка исчезает
+    jarObject.SetActive(false);
+}
+
+
 }

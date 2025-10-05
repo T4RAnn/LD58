@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using System.Collections.Generic;
-using UnityEngine.UI;
 
 public class CardSlot : MonoBehaviour, ICreatureSlot
 {
@@ -10,13 +9,14 @@ public class CardSlot : MonoBehaviour, ICreatureSlot
     public int maxCreatures = 5;
 
     private GameObject placeholder;
-    private CreatureInstance hoveredCreature; // цель под курсором
+    private CreatureInstance hoveredCreature;
 
-    // Обновляем позицию placeholder во время Drag
+    // === Обновляем плейсхолдер во время Drag ===
     public void UpdatePlaceholder(PointerEventData eventData)
     {
         List<CreatureInstance> creatures = GetCreatures();
 
+        // если слот переполнен → подсветка заменяемой карты
         if (creatures.Count >= maxCreatures)
         {
             DestroyPlaceholder();
@@ -24,6 +24,7 @@ public class CardSlot : MonoBehaviour, ICreatureSlot
             return;
         }
 
+        // если курсор вне зоны слота → убираем
         if (!RectTransformUtility.RectangleContainsScreenPoint(
             slotPanel as RectTransform,
             eventData.position,
@@ -35,9 +36,7 @@ public class CardSlot : MonoBehaviour, ICreatureSlot
         }
 
         if (placeholder == null)
-        {
             placeholder = Instantiate(placeholderPrefab, slotPanel);
-        }
 
         int index = GetInsertIndexClosest(eventData);
         placeholder.transform.SetSiblingIndex(index);
@@ -45,23 +44,21 @@ public class CardSlot : MonoBehaviour, ICreatureSlot
         ClearHighlight();
     }
 
+    // === Размещение карты ===
     public void PlaceCard(CardInstance card, PointerEventData eventData)
     {
         if (card == null || card.data == null) return;
-
         List<CreatureInstance> creatures = GetCreatures();
 
-        // === Если слот переполнен ===
+        // слот переполнен
         if (creatures.Count >= maxCreatures)
         {
             if (hoveredCreature != null && !hoveredCreature.isDead)
             {
-                Debug.Log($"Заменяем {hoveredCreature.name} на {card.data.cardName}");
-
+                int replaceIndex = hoveredCreature.transform.GetSiblingIndex();
                 if (hoveredCreature.cardData != null)
                     DeckManager.Instance.DiscardCard(hoveredCreature.cardData);
 
-                int replaceIndex = hoveredCreature.transform.GetSiblingIndex();
                 Destroy(hoveredCreature.gameObject);
 
                 GameObject go = Instantiate(card.data.creaturePrefab, slotPanel);
@@ -71,6 +68,7 @@ public class CardSlot : MonoBehaviour, ICreatureSlot
                 if (newCreature != null)
                 {
                     newCreature.Initialize(card.data.attack, card.data.health, false, card.data);
+                    StartCoroutine(newCreature.SpawnAnimationFlyOff());
                 }
 
                 Destroy(card.gameObject);
@@ -79,14 +77,14 @@ public class CardSlot : MonoBehaviour, ICreatureSlot
                 return;
             }
 
-            Debug.Log("Слот переполнен! Нет цели для замены.");
+            Debug.Log("Слот переполнен и нет цели для замены.");
             DestroyPlaceholder();
-            card.ReturnToHand();
+            HandLayout.Instance.DestroyPlaceholder();
             ClearHighlight();
             return;
         }
 
-        // === Обычное добавление ===
+        // обычное добавление
         if (placeholder == null)
         {
             card.ReturnToHand();
@@ -102,13 +100,14 @@ public class CardSlot : MonoBehaviour, ICreatureSlot
         if (creature != null)
         {
             creature.Initialize(card.data.attack, card.data.health, false, card.data);
+            StartCoroutine(creature.SpawnAnimationFlyOff());
         }
 
         Destroy(card.gameObject);
         DestroyPlaceholder();
     }
 
-    // === Подсветка ===
+    // === Подсветка цели замены ===
     private void HighlightCreatureUnderCursor(PointerEventData eventData)
     {
         GameObject hovered = eventData.pointerEnter;
@@ -133,9 +132,8 @@ public class CardSlot : MonoBehaviour, ICreatureSlot
     private void ClearHighlight()
     {
         if (hoveredCreature != null && hoveredCreature.skullIcon != null)
-        {
             hoveredCreature.skullIcon.SetActive(false);
-        }
+
         hoveredCreature = null;
     }
 
@@ -143,16 +141,12 @@ public class CardSlot : MonoBehaviour, ICreatureSlot
     public List<CreatureInstance> GetCreatures()
     {
         List<CreatureInstance> creatures = new List<CreatureInstance>();
-
         foreach (Transform child in slotPanel)
         {
             CreatureInstance c = child.GetComponent<CreatureInstance>();
             if (c != null && !c.isDead)
-            {
                 creatures.Add(c);
-            }
         }
-
         return creatures;
     }
 

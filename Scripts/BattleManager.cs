@@ -74,7 +74,7 @@ public class BattleManager : MonoBehaviour
                     else
                     {
                         // атака напрямую по игроку
-                        yield return StartCoroutine(attacker.DoAttackAnimation(true, battleDelay));
+                        yield return StartCoroutine(attacker.DoAttackAnimation(true));
                         playerHealth.TakeDamage(attacker.attack);
                         if (playerHealth.currentHealth <= 0)
                         {
@@ -113,7 +113,7 @@ public class BattleManager : MonoBehaviour
 
         // потом атака
         Debug.Log($"{attacker.name} атакует {target.name}");
-        yield return StartCoroutine(attacker.DoAttackAnimation(isEnemyAttack, battleDelay));
+        yield return StartCoroutine(attacker.DoAttackAnimation(isEnemyAttack));
 
         target.TakeDamage(attacker.attack);
         if (target.isDead)
@@ -128,7 +128,7 @@ public class BattleManager : MonoBehaviour
         Debug.Log($"[{unit.name}] Активирует способность: {unit.ability}");
 
         // сам юзер трясётся первым
-        yield return unit.StartCoroutine(unit.Shake(0.25f, 7f, battleDelay));
+        yield return unit.StartCoroutine(unit.Shake(0.25f, 7f));
 
         ICreatureSlot slot = unit.isEnemy ? (ICreatureSlot)enemySlot : playerSlot;
         var allies = slot.GetCreatures();
@@ -216,7 +216,7 @@ public class BattleManager : MonoBehaviour
         {
             if (ally != null)
             {
-                running.Add(ally.StartCoroutine(ally.Shake(0.2f, 5f, battleDelay)));
+                running.Add(ally.StartCoroutine(ally.Shake(0.2f, 5f)));
             }
         }
 

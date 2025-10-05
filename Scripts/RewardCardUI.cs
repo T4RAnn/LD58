@@ -5,8 +5,8 @@ using UnityEngine.EventSystems;
 
 public class RewardCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
-    public TMP_Text nameText;
-    public TMP_Text statsText;
+    public TMP_Text atkText;
+    public TMP_Text hpText;
     public Button selectButton;
 
     private CardData cardData;
@@ -17,8 +17,8 @@ public class RewardCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
         cardData = data;
         rewardManager = manager;
 
-        nameText.text = data.cardName;
-        statsText.text = $"ATK: {data.attack} | HP: {data.health}";
+        atkText.text = $"{data.attack}";
+        hpText.text = $"{data.health}";
 
         selectButton.onClick.AddListener(() => rewardManager.OnCardSelected(cardData));
     }
