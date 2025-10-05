@@ -4,13 +4,15 @@ using TMPro;
 using System.Collections;
 using UnityEngine.UI;
 
-public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerEnterHandler, IPointerExitHandler
 {
     private CanvasGroup canvasGroup;
     private Transform originalParent;
     private CardSlot currentSlot;
 
     private Vector2 dragOffset;
+    private bool isHovered = false;
+    private Coroutine shakeCoroutine;
 
     [Header("Данные карты")]
     public CardData data;
@@ -23,14 +25,147 @@ public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
     public Image jarImage;
     public Image creatureImage;
 
+    [Header("Настройки тряски банки")]
+    public float shakeIntensity = 2f;
+    public float shakeSpeed = 8f;
+
+    [Header("Настройки тряски существа")]
+    public float creatureShakeIntensity = 3f;
+    public float creatureShakeSpeed = 12f;
+
     private void Awake()
     {
         canvasGroup = GetComponent<CanvasGroup>();
         UpdateUI();
     }
 
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (HandLayout.DraggingCard != null) return;
+        
+        isHovered = true;
+        if (shakeCoroutine != null)
+            StopCoroutine(shakeCoroutine);
+        shakeCoroutine = StartCoroutine(ShakeAnimation());
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        isHovered = false;
+        if (shakeCoroutine != null)
+            StopCoroutine(shakeCoroutine);
+        shakeCoroutine = StartCoroutine(StopShakeAnimation());
+    }
+
+    private IEnumerator ShakeAnimation()
+    {
+        float elapsed = 0f;
+        RectTransform jarRect = jarImage != null ? jarImage.rectTransform : null;
+        RectTransform creatureRect = creatureImage != null ? creatureImage.rectTransform : null;
+        
+        Vector3 jarOriginalRotation = jarRect != null ? jarRect.localEulerAngles : Vector3.zero;
+        Vector3 creatureOriginalPosition = creatureRect != null ? creatureRect.localPosition : Vector3.zero;
+
+        while (isHovered)
+        {
+            elapsed += Time.deltaTime;
+            
+            // Раскачивание банки (вращение)
+            if (jarRect != null)
+            {
+                float jarShake = Mathf.Sin(elapsed * shakeSpeed) * shakeIntensity;
+                jarRect.localEulerAngles = new Vector3(
+                    jarOriginalRotation.x,
+                    jarOriginalRotation.y,
+                    jarOriginalRotation.z + jarShake
+                );
+            }
+
+            // Дрожание существа (позиция)
+            if (creatureRect != null)
+            {
+                float creatureShakeX = Mathf.Sin(elapsed * creatureShakeSpeed + 0.5f) * creatureShakeIntensity;
+                float creatureShakeY = Mathf.Cos(elapsed * creatureShakeSpeed * 0.8f) * creatureShakeIntensity * 0.7f;
+                
+                creatureRect.localPosition = new Vector3(
+                    creatureOriginalPosition.x + creatureShakeX,
+                    creatureOriginalPosition.y + creatureShakeY,
+                    creatureOriginalPosition.z
+                );
+            }
+
+            yield return null;
+        }
+
+        // Плавный возврат к исходному положению
+        yield return StartCoroutine(StopShakeAnimation());
+    }
+
+    private IEnumerator StopShakeAnimation()
+    {
+        RectTransform jarRect = jarImage != null ? jarImage.rectTransform : null;
+        RectTransform creatureRect = creatureImage != null ? creatureImage.rectTransform : null;
+        
+        Vector3 jarCurrentRotation = jarRect != null ? jarRect.localEulerAngles : Vector3.zero;
+        Vector3 creatureCurrentPosition = creatureRect != null ? creatureRect.localPosition : Vector3.zero;
+        
+        Vector3 jarTargetRotation = Vector3.zero;
+        Vector3 creatureTargetPosition = Vector3.zero;
+
+        float t = 0f;
+        float duration = 0.2f;
+
+        while (t < 1f)
+        {
+            t += Time.deltaTime / duration;
+            
+            if (jarRect != null)
+            {
+                jarRect.localEulerAngles = Vector3.Lerp(jarCurrentRotation, jarTargetRotation, t);
+            }
+            
+            if (creatureRect != null)
+            {
+                creatureRect.localPosition = Vector3.Lerp(creatureCurrentPosition, creatureTargetPosition, t);
+            }
+
+            yield return null;
+        }
+
+        // Финальное выравнивание
+        if (jarRect != null)
+            jarRect.localEulerAngles = jarTargetRotation;
+        
+        if (creatureRect != null)
+            creatureRect.localPosition = creatureTargetPosition;
+    }
+
+    // Останавливаем тряску при начале drag
     public void OnBeginDrag(PointerEventData eventData)
     {
+        isHovered = false;
+        if (shakeCoroutine != null)
+        {
+            StopCoroutine(shakeCoroutine);
+            shakeCoroutine = null;
+        }
+
+        // Сбрасываем rotation банки и позицию существа
+        if (jarImage != null)
+        {
+            RectTransform jarRect = jarImage.rectTransform;
+            jarRect.localEulerAngles = Vector3.zero;
+        }
+
+        if (creatureImage != null)
+        {
+            RectTransform creatureRect = creatureImage.rectTransform;
+            creatureRect.localPosition = Vector3.zero;
+        }
+
+        // проигрываем звук взятия карты
+        AudioManager.Instance?.PlayCardPick();
+
         originalParent = transform.parent;
         canvasGroup.blocksRaycasts = false;
         HandLayout.DraggingCard = this;
@@ -44,6 +179,7 @@ public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         );
     }
 
+    // Остальной код без изменений...
     public void OnDrag(PointerEventData eventData)
     {
         Vector2 localPos;
@@ -139,7 +275,6 @@ public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         slot.PlaceCard(this, null);
     }
 
-
     public void ReturnToHand()
     {
         Transform handPanel = DeckManager.Instance.handPanel;
@@ -176,8 +311,6 @@ public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         transform.position = targetPos;
     }
 
-
-
     public void UpdateUI()
     {
         if (data == null) return;
@@ -188,22 +321,20 @@ public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         if (hpText != null)
             hpText.text = data.health.ToString();
 
-if (creatureImage != null && data.creatureInside != null)
-{
-    creatureImage.sprite = data.creatureInside;
+        if (creatureImage != null && data.creatureInside != null)
+        {
+            creatureImage.sprite = data.creatureInside;
 
-    var scaler = creatureImage.GetComponent<CreatureImageScaler>();
-    if (scaler != null) scaler.ApplyScale();
-}
+            var scaler = creatureImage.GetComponent<CreatureImageScaler>();
+            if (scaler != null) scaler.ApplyScale();
+        }
 
-if (jarImage != null && data.jarSprite != null)
-{
-    jarImage.sprite = data.jarSprite;
+        if (jarImage != null && data.jarSprite != null)
+        {
+            jarImage.sprite = data.jarSprite;
 
-    var scaler = jarImage.GetComponent<CreatureImageScaler>();
-    if (scaler != null) scaler.ApplyScale();
-}
-
+            var scaler = jarImage.GetComponent<CreatureImageScaler>();
+            if (scaler != null) scaler.ApplyScale();
+        }
     }
-
 }

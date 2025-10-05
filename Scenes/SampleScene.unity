@@ -150,6 +150,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ambientClip: {fileID: 8300000, guid: 07c826355d6e8cc4db99504a71bdec08, type: 3}
   ambientVolume: 0.5
+  cardPickSound: {fileID: 8300000, guid: 9f89b91e1259eb34191568f583c17fcc, type: 3}
+  statUpSound: {fileID: 8300000, guid: 6ee395e81e9248c48b16c5e965935617, type: 3}
+  shakeSound: {fileID: 8300000, guid: 5eb443cbbf2923e44b54538cc0f08d97, type: 3}
+  victorySound: {fileID: 8300000, guid: d37f1e205255a904cb710e74d29cecef, type: 3}
+  attackSound: {fileID: 8300000, guid: 8fa86e93a7d3add449b7c1d651f0566b, type: 3}
+  deathSound: {fileID: 8300000, guid: 1d573dd14cd745640a630098c3b7f71d, type: 3}
   sfxVolume: 1
 --- !u!4 &28707900
 Transform:
@@ -355,7 +361,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tooltipPanel: {fileID: 266710785}
   tooltipText: {fileID: 988204315}
-  screenOffset: {x: 0, y: 200}
+  screenOffset: {x: 0, y: 160}
 --- !u!114 &266710787
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -492,7 +498,7 @@ Canvas:
   m_GameObject: {fileID: 332452759}
   m_Enabled: 1
   serializedVersion: 3
-  m_RenderMode: 0
+  m_RenderMode: 1
   m_Camera: {fileID: 519420031}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
@@ -616,7 +622,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -171}
+  m_AnchoredPosition: {x: 0, y: -171.00003}
   m_SizeDelta: {x: -1135.5637, y: -844.9998}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &396079738
@@ -794,7 +800,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -737.43, y: 451}
+  m_AnchoredPosition: {x: -656, y: 451}
   m_SizeDelta: {x: -1527.1273, y: -950}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &482559848
@@ -1649,7 +1655,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -385.36}
+  m_AnchoredPosition: {x: 0, y: -385.36002}
   m_SizeDelta: {x: -867.3584, y: -853.84}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &749286409
@@ -1702,7 +1708,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0614aa40f2db74d45adeb6da811571b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spacing: 150
+  spacing: 200
   curveStrength: 0
   rotationAngle: 0
   moveSpeed: 10
@@ -2381,7 +2387,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4cf4e18d84aa9a4f953518a1c44ae28, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 20
+  maxHealth: 30
   currentHealth: 0
   healthBar: {fileID: 1498013609}
   healthText: {fileID: 582044976}
@@ -2815,7 +2821,6 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 454a1276d52eb9b45ae639e93eedaeae, type: 2}
     rewardTemplateIndex: 2
   - enemies:
-    - {fileID: 11400000, guid: 2b23c0d496625854693fc93b8f2a5874, type: 2}
     - {fileID: 11400000, guid: b421cc9b4adc90f41919067b8894f47a, type: 2}
     - {fileID: 11400000, guid: d8d0a15e4a30b9b408eb5dff228458c8, type: 2}
     - {fileID: 11400000, guid: 22ed3ab63d75e594e8ef44cc2e5cb620, type: 2}
@@ -2831,15 +2836,8 @@ MonoBehaviour:
   - enemies:
     - {fileID: 11400000, guid: b421cc9b4adc90f41919067b8894f47a, type: 2}
     - {fileID: 11400000, guid: d8d0a15e4a30b9b408eb5dff228458c8, type: 2}
-    - {fileID: 11400000, guid: 2b23c0d496625854693fc93b8f2a5874, type: 2}
-    - {fileID: 11400000, guid: 2a6f4825936a03548b7b166309cbcc8d, type: 2}
-    - {fileID: 11400000, guid: c5410fe367f05bb4ea870d2dbf7a55ee, type: 2}
-    rewardTemplateIndex: 4
-  - enemies:
-    - {fileID: 11400000, guid: b421cc9b4adc90f41919067b8894f47a, type: 2}
-    - {fileID: 11400000, guid: d8d0a15e4a30b9b408eb5dff228458c8, type: 2}
     - {fileID: 11400000, guid: d26dc03ee0044d540a11458a1a318bd8, type: 2}
-    - {fileID: 11400000, guid: e276d7d07f19cc44da1b1c49428edc4d, type: 2}
+    - {fileID: 11400000, guid: d1185059a5fbf2349b19c34226f9f677, type: 2}
     rewardTemplateIndex: 0
   currentWaveIndex: 0
   cardsPerTurn: 3

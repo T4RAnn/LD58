@@ -436,6 +436,7 @@ GameObject:
   - component: {fileID: 5290905563065726332}
   - component: {fileID: 2027722734883880376}
   - component: {fileID: 8560559180755937493}
+  - component: {fileID: 7702076646658430002}
   m_Layer: 5
   m_Name: RewardCardPrefab
   m_TagString: Untagged
@@ -532,6 +533,20 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &7702076646658430002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7900327867845770161}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7fb22a96d969174c866b568c929fd76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cardUI: {fileID: 2027722734883880376}
+  showDelay: 0.08
 --- !u!1 &8844306646321518081
 GameObject:
   m_ObjectHideFlags: 0

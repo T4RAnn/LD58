@@ -48,60 +48,41 @@ public class CreatureInstance : MonoBehaviour
     }
 
     // === Инициализация ===
-public void Initialize(int atk, int hp, bool enemy = false, CardData data = null, GameObject summon = null)
-{
-    attack = atk;
-    currentHP = hp;
-    isEnemy = enemy;
-    cardData = data;
-    summonPrefab = summon;
-
-    ability = (cardData != null) ? cardData.ability : AbilityType.None;
-
-if (creatureImage != null && cardData != null && cardData.creatureInside != null)
-{
-    creatureImage.sprite = cardData.creatureInside;
-
-    // Подгоняем размер под maxSize
-    var scaler = creatureImage.GetComponent<CreatureImageScaler>();
-    if (scaler != null) scaler.ApplyScale();
-}
-
-if (jarObject != null && cardData != null && cardData.jarSprite != null)
-{
-    Image jarImg = jarObject.GetComponent<Image>();
-    if (jarImg != null)
+    public void Initialize(int atk, int hp, bool enemy = false, CardData data = null, GameObject summon = null)
     {
-        jarImg.sprite = cardData.jarSprite;
+        attack = atk;
+        currentHP = hp;
+        isEnemy = enemy;
+        cardData = data;
 
-        var scaler = jarImg.GetComponent<CreatureImageScaler>();
-        if (scaler != null) scaler.ApplyScale();
+        // берем summonPrefab из данных карты, если не передан явно
+        summonPrefab = summon ?? cardData?.summonPrefab;
+
+        ability = (cardData != null) ? cardData.ability : AbilityType.None;
+
+        // Спрайт существа
+        if (creatureImage != null && cardData?.creatureInside != null)
+        {
+            creatureImage.sprite = cardData.creatureInside;
+            creatureImage.GetComponent<CreatureImageScaler>()?.ApplyScale();
+        }
+
+        // Спрайт банки
+        if (jarObject != null && cardData?.jarSprite != null)
+        {
+            Image jarImg = jarObject.GetComponent<Image>();
+            if (jarImg != null)
+            {
+                jarImg.sprite = cardData.jarSprite;
+                jarImg.GetComponent<CreatureImageScaler>()?.ApplyScale();
+            }
+        }
+
+        // скрываем череп
+        skullIcon?.SetActive(false);
+
+        UpdateUI();
     }
-}
-
-    UpdateUI();
-
-    if (skullIcon != null)
-        skullIcon.SetActive(false);
-}
-
-// === Новый метод для масштабирования Image ===
-private void SetImageWithMaxSize(Image image, Sprite sprite, Vector2 maxSize)
-{
-    image.sprite = sprite;
-
-    float spriteWidth = sprite.rect.width;
-    float spriteHeight = sprite.rect.height;
-
-    float scaleX = maxSize.x / spriteWidth;
-    float scaleY = maxSize.y / spriteHeight;
-
-    float finalScale = Mathf.Min(scaleX, scaleY);
-
-    RectTransform rt = image.rectTransform;
-    rt.sizeDelta = new Vector2(spriteWidth * finalScale, spriteHeight * finalScale);
-}
-
 
     // === Баф ===
     public void ApplyBuff(int atkDelta, int hpDelta)
@@ -115,6 +96,10 @@ private void SetImageWithMaxSize(Image image, Sprite sprite, Vector2 maxSize)
             StartCoroutine(BuffFlash(atkText, Color.green, 0.3f));
         if (hpDelta != 0 && hpText != null)
             StartCoroutine(BuffFlash(hpText, Color.green, 0.3f));
+
+        // проигрываем звук повышения стата
+        if (atkDelta != 0 || hpDelta != 0)
+        AudioManager.Instance?.PlayStatUp();
     }
 
     // === Урон ===
@@ -152,6 +137,9 @@ private void SetImageWithMaxSize(Image image, Sprite sprite, Vector2 maxSize)
     // === Анимации ===
     public IEnumerator DoAttackAnimation(bool isEnemyAttack)
     {
+        // проигрываем звук атаки
+        AudioManager.Instance?.PlayAttack();
+
         Vector3 startPos = transform.localPosition;
         Vector3 targetPos = startPos + (isEnemyAttack ? Vector3.left : Vector3.right) * 50f;
 
@@ -168,6 +156,9 @@ private void SetImageWithMaxSize(Image image, Sprite sprite, Vector2 maxSize)
 
     public IEnumerator Shake(float duration, float magnitude)
     {
+        // проигрываем звук тряски
+        AudioManager.Instance?.PlayShake();
+
         Vector3 originalPos = transform.localPosition;
         float elapsed = 0f;
 
@@ -227,58 +218,66 @@ private void SetImageWithMaxSize(Image image, Sprite sprite, Vector2 maxSize)
 
         jarObject.SetActive(false);
     }
+    
 // === Враги: сжатие + исчезновение ===
-private IEnumerator DeathAnimationEnemy()
-{
-    CanvasGroup cg = GetComponent<CanvasGroup>();
-    if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
-    cg.interactable = false;
-    cg.blocksRaycasts = false;
-
-    float duration = 0.6f;
-    float elapsed = 0f;
-    Vector3 originalScale = transform.localScale;
-    Vector3 targetScale = originalScale * 0.3f;
-
-    while (elapsed < duration)
+    private IEnumerator DeathAnimationEnemy()
     {
-        elapsed += Time.deltaTime;
-        float t = elapsed / duration;
-        transform.localScale = Vector3.Lerp(originalScale, targetScale, Mathf.SmoothStep(0, 1, t));
-        cg.alpha = Mathf.Lerp(1f, 0f, t);
-        yield return null;
+        AudioManager.Instance?.PlayDeath();
+
+        CanvasGroup cg = GetComponent<CanvasGroup>();
+        if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
+        cg.interactable = false;
+        cg.blocksRaycasts = false;
+
+        float duration = 0.6f;
+        float elapsed = 0f;
+        Vector3 originalScale = transform.localScale;
+        Vector3 targetScale = originalScale * 0.3f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            transform.localScale = Vector3.Lerp(originalScale, targetScale, Mathf.SmoothStep(0, 1, t));
+            cg.alpha = Mathf.Lerp(1f, 0f, t);
+            yield return null;
+        }
+
+        if (jarObject != null)
+            StartCoroutine(SpawnAnimationFlyOff());
+
+        Destroy(gameObject);
     }
-
-    if (jarObject != null)
-        StartCoroutine(SpawnAnimationFlyOff());
-
-    Destroy(gameObject);
-}
 
 // === Союзники: улетание в сброс ===
 private IEnumerator DeathAnimationAlly()
 {
+    AudioManager.Instance?.PlayDeath();
+
     CanvasGroup cg = GetComponent<CanvasGroup>();
     if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
     cg.interactable = false;
     cg.blocksRaycasts = false;
 
-    Transform discardPile = DeckManager.Instance.discardPileTransform;
-    if (discardPile == null)
+    RectTransform rect = GetComponent<RectTransform>();
+    RectTransform discardRect = DeckManager.Instance.discardPileTransform?.GetComponent<RectTransform>();
+
+    if (discardRect == null)
     {
         Destroy(gameObject);
         yield break;
     }
 
-    Vector3 startPos = transform.position;
-    Vector3 targetPos = discardPile.position;
-    Vector3 originalScale = transform.localScale;
+    // Запоминаем начальные данные
+    Vector2 startPos = rect.anchoredPosition;
+    Vector2 targetPos = discardRect.anchoredPosition;
+    Vector3 originalScale = rect.localScale;
     Vector3 targetScale = originalScale * 0.5f;
 
     float duration = 0.8f;
     float elapsed = 0f;
 
-    float zigzagMagnitude = 30f;
+    float zigzagMagnitude = 40f;
     int zigzagCount = 3;
 
     while (elapsed < duration)
@@ -286,14 +285,17 @@ private IEnumerator DeathAnimationAlly()
         elapsed += Time.deltaTime;
         float t = elapsed / duration;
 
-        Vector3 basePos = Vector3.Lerp(startPos, targetPos, Mathf.SmoothStep(0, 1, t));
+        // Плавное движение
+        Vector2 basePos = Vector2.Lerp(startPos, targetPos, Mathf.SmoothStep(0, 1, t));
+
+        // Зигзаг
         float zigzagOffset = Mathf.Sin(t * Mathf.PI * zigzagCount) * zigzagMagnitude * (1 - t);
-        transform.position = basePos + new Vector3(zigzagOffset, 0, 0);
+        rect.anchoredPosition = basePos + new Vector2(zigzagOffset, 0);
 
+        // Вращение и уменьшение
         float rotationZ = Mathf.Lerp(0f, 180f, t);
-        transform.rotation = Quaternion.Euler(0, 0, rotationZ);
-
-        transform.localScale = Vector3.Lerp(originalScale, targetScale, t);
+        rect.localRotation = Quaternion.Euler(0, 0, rotationZ);
+        rect.localScale = Vector3.Lerp(originalScale, targetScale, t);
         cg.alpha = Mathf.Lerp(1f, 0f, t);
 
         yield return null;
@@ -304,6 +306,8 @@ private IEnumerator DeathAnimationAlly()
 
     Destroy(gameObject);
 }
+
+
 
     // === Черепок ===
     public void ShowSkullIcon() { if (skullIcon != null) skullIcon.SetActive(true); }

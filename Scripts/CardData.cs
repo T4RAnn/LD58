@@ -29,6 +29,8 @@ public class CardData : ScriptableObject
 
     [Header("Creature Settings")]
     public GameObject creaturePrefab;
+    public GameObject summonPrefab; // ← добавляем сюда
+
     public int attack;
     public int health;
 

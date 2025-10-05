@@ -20,94 +20,90 @@ public class BattleManager : MonoBehaviour
         battleRoutine = StartCoroutine(AutoBattle());
     }
 
-private IEnumerator AutoBattle()
-{
-    Debug.Log("=== Автобой начался ===");
-
-    PlayerHealth playerHealth = FindObjectOfType<PlayerHealth>();
-    GameManager gameManager = FindObjectOfType<GameManager>();
-
-    List<CreatureInstance> playerOrder = playerSlot.GetCreatures()
-        .FindAll(c => c != null && !c.isDead);
-    playerOrder.Sort((a, b) => b.transform.GetSiblingIndex().CompareTo(a.transform.GetSiblingIndex()));
-
-    List<CreatureInstance> enemyOrder = enemySlot.GetCreatures()
-        .FindAll(c => c != null && !c.isDead);
-    enemyOrder.Sort((a, b) => a.transform.GetSiblingIndex().CompareTo(b.transform.GetSiblingIndex()));
-
-    int pIndex = 0;
-    int eIndex = 0;
-
-    while (pIndex < playerOrder.Count || eIndex < enemyOrder.Count)
+    private IEnumerator AutoBattle()
     {
-        // 🟡 Ждём, пока не закончится пауза
-        while (isPaused)
-            yield return null;
+        Debug.Log("=== Автобой начался ===");
 
-        // --- ход игрока ---
-        if (pIndex < playerOrder.Count)
+        PlayerHealth playerHealth = FindObjectOfType<PlayerHealth>();
+        GameManager gameManager = FindObjectOfType<GameManager>();
+
+        List<CreatureInstance> playerOrder = playerSlot.GetCreatures()
+            .FindAll(c => c != null && !c.isDead);
+        playerOrder.Sort((a, b) => b.transform.GetSiblingIndex().CompareTo(a.transform.GetSiblingIndex()));
+
+        List<CreatureInstance> enemyOrder = enemySlot.GetCreatures()
+            .FindAll(c => c != null && !c.isDead);
+        enemyOrder.Sort((a, b) => a.transform.GetSiblingIndex().CompareTo(b.transform.GetSiblingIndex()));
+
+        int pIndex = 0;
+        int eIndex = 0;
+
+        while (pIndex < playerOrder.Count || eIndex < enemyOrder.Count)
         {
-            var attacker = GetNextAlive(playerOrder, ref pIndex);
-            if (attacker != null)
-            {
-                var enemies = enemySlot.GetCreatures();
-                if (enemies.Count > 0)
-                {
-                    var target = enemies[0];
-                    yield return StartCoroutine(Attack(attacker, target, false));
-                }
-            }
-            yield return new WaitForSeconds(battleDelay);
-        }
+            while (isPaused)
+                yield return null;
 
-        // 🟡 Проверяем паузу между ходами
-        while (isPaused)
-            yield return null;
-
-        // --- ход врага ---
-        if (eIndex < enemyOrder.Count)
-        {
-            var attacker = GetNextAlive(enemyOrder, ref eIndex);
-            if (attacker != null)
+            // --- ход игрока ---
+            if (pIndex < playerOrder.Count)
             {
-                var players = playerSlot.GetCreatures();
-                if (players.Count > 0)
+                var attacker = GetNextAlive(playerOrder, ref pIndex);
+                if (attacker != null)
                 {
-                    var target = players[players.Count - 1];
-                    yield return StartCoroutine(Attack(attacker, target, true));
-                }
-                else
-                {
-                    yield return StartCoroutine(attacker.DoAttackAnimation(true));
-                    playerHealth.TakeDamage(attacker.attack);
-                    if (playerHealth.currentHealth <= 0)
+                    var enemies = enemySlot.GetCreatures();
+                    if (enemies.Count > 0)
                     {
-                        gameManager.OnBattleLost();
-                        yield break;
+                        var target = enemies[0];
+                        yield return StartCoroutine(Attack(attacker, target, false));
                     }
                 }
+                yield return new WaitForSeconds(battleDelay);
             }
-            yield return new WaitForSeconds(battleDelay);
+
+            while (isPaused)
+                yield return null;
+
+            // --- ход врага ---
+            if (eIndex < enemyOrder.Count)
+            {
+                var attacker = GetNextAlive(enemyOrder, ref eIndex);
+                if (attacker != null)
+                {
+                    var players = playerSlot.GetCreatures();
+                    if (players.Count > 0)
+                    {
+                        var target = players[players.Count - 1];
+                        yield return StartCoroutine(Attack(attacker, target, true));
+                    }
+                    else
+                    {
+                        yield return StartCoroutine(attacker.DoAttackAnimation(true));
+                        playerHealth.TakeDamage(attacker.attack);
+                        if (playerHealth.currentHealth <= 0)
+                        {
+                            gameManager.OnBattleLost();
+                            yield break;
+                        }
+                    }
+                }
+                yield return new WaitForSeconds(battleDelay);
+            }
         }
+
+        if (enemySlot.GetCreatures().Count <= 0)
+        {
+            gameManager.OnBattleWon();
+            yield break;
+        }
+
+        if (playerHealth.currentHealth <= 0)
+        {
+            gameManager.OnBattleLost();
+            yield break;
+        }
+
+        gameManager.StartPlayerTurn();
     }
 
-    if (enemySlot.GetCreatures().Count <= 0)
-    {
-        gameManager.OnBattleWon();
-        yield break;
-    }
-
-    if (playerHealth.currentHealth <= 0)
-    {
-        gameManager.OnBattleLost();
-        yield break;
-    }
-
-    gameManager.StartPlayerTurn();
-}
-
-
-    // --- атака ---
     private IEnumerator Attack(CreatureInstance attacker, CreatureInstance target, bool isEnemyAttack)
     {
         if (attacker == null || attacker.isDead) yield break;
@@ -133,6 +129,7 @@ private IEnumerator AutoBattle()
         Debug.Log($"{attacker.name} атакует {target.name}");
         yield return StartCoroutine(attacker.DoAttackAnimation(isEnemyAttack));
 
+        // Звук попадания (можно добавить отдельно при TakeDamage)
         target.TakeDamage(attacker.attack);
         yield return new WaitForSeconds(0.2f);
     }
@@ -145,7 +142,6 @@ private IEnumerator AutoBattle()
         if (list == null || list.Count == 0)
             return null;
 
-        // для врагов — бьём правого игрока, для игрока — левого врага
         if (isEnemyAttack)
         {
             for (int i = list.Count - 1; i >= 0; i--)
@@ -162,14 +158,13 @@ private IEnumerator AutoBattle()
         return null;
     }
 
-    // --- способности ---
     private IEnumerator TriggerAbilities(CreatureInstance unit)
     {
         if (unit == null || unit.ability == AbilityType.None) yield break;
 
         Debug.Log($"[{unit.name}] Активирует способность: {unit.ability}");
 
-        // сам юзер трясётся первым
+        // тряска при активации абилки
         yield return unit.StartCoroutine(unit.Shake(0.25f, 7f));
 
         ICreatureSlot slot = unit.isEnemy ? (ICreatureSlot)enemySlot : playerSlot;
@@ -177,7 +172,6 @@ private IEnumerator AutoBattle()
         int index = allies.IndexOf(unit);
         if (index == -1) yield break;
 
-        // список тех, кто получит эффект
         List<CreatureInstance> affected = new List<CreatureInstance>();
 
         switch (unit.ability)
@@ -251,29 +245,25 @@ private IEnumerator AutoBattle()
                 }
                 break;
 
-            // 🔹 Увеличивает себя 1 хп и 1 атк
             case AbilityType.SelfBuff1HP1ATK:
                 unit.ApplyBuff(1, 1);
                 affected.Add(unit);
                 break;
 
-            // 🔹 Блокирует 1 урон — запоминаем эффект
             case AbilityType.Block1Damage:
                 unit.StartCoroutine(ApplyTemporaryBlock(unit, 1));
                 break;
 
-            // 🔹 Атакует дважды — просто делаем вторую атаку позже
             case AbilityType.DoubleAttack:
                 unit.StartCoroutine(DoubleAttack(unit, unit.isEnemy));
                 break;
 
-            // 🔹 Призывает существо перед собой
             case AbilityType.SummonInFront:
                 unit.StartCoroutine(SummonAllyInFront(unit));
                 break;
         }
 
-        // теперь трясём всех получивших эффект
+        // тряска для всех затронутых
         List<Coroutine> running = new List<Coroutine>();
         foreach (var ally in affected)
         {
@@ -286,11 +276,9 @@ private IEnumerator AutoBattle()
         foreach (var c in running)
             yield return c;
 
-        // задержка после применения абилки
         yield return new WaitForSeconds(battleDelay);
     }
 
-    // --- Временный блок урона ---
     private IEnumerator ApplyTemporaryBlock(CreatureInstance unit, int amount)
     {
         unit.blockValue += amount;
@@ -298,7 +286,6 @@ private IEnumerator AutoBattle()
         yield return null;
     }
 
-    // --- Двойная атака ---
     private IEnumerator DoubleAttack(CreatureInstance unit, bool isEnemy)
     {
         Debug.Log($"{unit.name} выполняет двойную атаку!");
@@ -320,16 +307,11 @@ private IEnumerator AutoBattle()
         {
             targets = targetSlot.GetCreatures();
             target = isEnemy ? GetRightmostAlive(targets) : GetLeftmostAlive(targets);
-            if (target == null)
-            {
-                Debug.Log($"{unit.name} никого не нашёл для второго удара.");
-                yield break;
-            }
+            if (target == null) yield break;
         }
 
         Debug.Log($"{unit.name} наносит второй удар по {target.name}");
         yield return StartCoroutine(AttackOnce(unit, target, isEnemy));
-
         yield return new WaitForSeconds(0.2f);
     }
 
@@ -346,7 +328,6 @@ private IEnumerator AutoBattle()
         yield return new WaitForSeconds(0.2f);
     }
 
-    // --- Призыв существа перед собой ---
     private IEnumerator SummonAllyInFront(CreatureInstance summoner)
     {
         if (summoner == null) yield break;
@@ -358,30 +339,22 @@ private IEnumerator AutoBattle()
         int index = allies.IndexOf(summoner);
         if (index == -1) yield break;
 
-        // Выбираем префаб для призыва
         GameObject prefabToSummon = summoner.summonPrefab != null
             ? summoner.summonPrefab
             : summoner.cardData?.creaturePrefab;
 
         if (prefabToSummon == null) yield break;
 
-        // Создаём новый экземпляр
         GameObject newCreature = Instantiate(prefabToSummon, summoner.transform.parent);
 
-        // Рассчитываем безопасный индекс
         int insertIndex = summoner.isEnemy ? Mathf.Max(0, index - 1) : Mathf.Min(allies.Count, index + 1);
-
-        // Ставим объект на нужную позицию в иерархии
         newCreature.transform.SetSiblingIndex(insertIndex);
 
-    // Инициализируем CreatureInstance
-    var instance = newCreature.GetComponent<CreatureInstance>();
+        var instance = newCreature.GetComponent<CreatureInstance>();
         if (instance != null)
         {
-            // Всегда 2/2 для призываемого монстра
             int atk = 2;
             int hp = 2;
-
             instance.Initialize(atk, hp, summoner.isEnemy);
             allies.Insert(insertIndex, instance);
         }
@@ -394,31 +367,23 @@ private IEnumerator AutoBattle()
         if (slot == null) return null;
 
         var list = slot.GetCreatures();
-        if (list == null || list.Count == 0)
-            return null;
+        if (list == null || list.Count == 0) return null;
 
         return leftmost ? list[0] : list[list.Count - 1];
     }
 
-    // получить "переднего" соседа
     private CreatureInstance GetFrontAlly(List<CreatureInstance> allies, int index, bool isEnemy)
     {
-        if (isEnemy)
-            return (index > 0) ? allies[index - 1] : null;
-        else
-            return (index < allies.Count - 1) ? allies[index + 1] : null;
+        if (isEnemy) return (index > 0) ? allies[index - 1] : null;
+        else return (index < allies.Count - 1) ? allies[index + 1] : null;
     }
 
-    // получить "заднего" соседа
     private CreatureInstance GetBackAlly(List<CreatureInstance> allies, int index, bool isEnemy)
     {
-        if (isEnemy)
-            return (index < allies.Count - 1) ? allies[index + 1] : null;
-        else
-            return (index > 0) ? allies[index - 1] : null;
+        if (isEnemy) return (index < allies.Count - 1) ? allies[index + 1] : null;
+        else return (index > 0) ? allies[index - 1] : null;
     }
 
-    // выбрать живого
     private CreatureInstance GetNextAlive(List<CreatureInstance> order, ref int index)
     {
         while (index < order.Count)

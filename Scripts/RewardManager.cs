@@ -135,13 +135,25 @@ public class RewardManager : MonoBehaviour
             Destroy(child.gameObject);
     }
 
-    public void OnCardSelected(RewardCardUI selectedCardUI)
+public void OnCardSelected(RewardCardUI selectedCardUI)
+{
+    // Делаем выбранную карту неактивной для повторного клика
+    selectedCardUI.GetComponent<Button>().interactable = false;
+
+    // Блокируем все остальные карты
+    foreach (Transform child in rewardContainer)
     {
-        selectedCardUI.GetComponent<Button>().interactable = false;
-        Canvas rootCanvas = FindObjectOfType<Canvas>();
-        selectedCardUI.transform.SetParent(rootCanvas.transform, true);
-        StartCoroutine(AnimateRewardCard(selectedCardUI));
+        var btn = child.GetComponent<Button>();
+        if (btn != null && child.gameObject != selectedCardUI.gameObject)
+            btn.interactable = false;
     }
+
+    Canvas rootCanvas = FindObjectOfType<Canvas>();
+    selectedCardUI.transform.SetParent(rootCanvas.transform, true);
+
+    StartCoroutine(AnimateRewardCard(selectedCardUI));
+}
+
 
     private IEnumerator AnimateRewardCard(RewardCardUI cardUI)
     {

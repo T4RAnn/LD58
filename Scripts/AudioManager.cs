@@ -1,15 +1,20 @@
 using UnityEngine;
-using System.Collections.Generic;
 
 public class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance;
 
-    [Header("Настройки амбиента")]
+    [Header("Амбиент")]
     public AudioClip ambientClip;
     [Range(0f, 1f)] public float ambientVolume = 0.5f;
 
-    [Header("Настройки звуков эффектов")]
+    [Header("Звуки эффектов")]
+    public AudioClip cardPickSound;     // взятие карты
+    public AudioClip statUpSound;       // повышение стата
+    public AudioClip shakeSound;        // тряска
+    public AudioClip victorySound;      // победа
+    public AudioClip attackSound;       // атака
+    public AudioClip deathSound;        // смерть
     [Range(0f, 1f)] public float sfxVolume = 1f;
 
     private AudioSource ambientSource;
@@ -17,7 +22,6 @@ public class AudioManager : MonoBehaviour
 
     private void Awake()
     {
-        // Singleton
         if (Instance == null)
         {
             Instance = this;
@@ -29,7 +33,7 @@ public class AudioManager : MonoBehaviour
             return;
         }
 
-        // Создаем аудиоканалы
+        // Создаём каналы аудио
         ambientSource = gameObject.AddComponent<AudioSource>();
         ambientSource.clip = ambientClip;
         ambientSource.loop = true;
@@ -70,16 +74,26 @@ public class AudioManager : MonoBehaviour
             ambientSource.volume = ambientVolume;
     }
 
-    public void PlaySFX(AudioClip clip)
-    {
-        if (clip == null) return;
-        sfxSource.PlayOneShot(clip, sfxVolume);
-    }
-
     public void SetSFXVolume(float volume)
     {
         sfxVolume = Mathf.Clamp01(volume);
         if (sfxSource != null)
             sfxSource.volume = sfxVolume;
+    }
+
+    // =======================
+    // Проигрывание конкретных эффектов
+    // =======================
+    public void PlayCardPick() => PlaySFX(cardPickSound);
+    public void PlayStatUp() => PlaySFX(statUpSound);
+    public void PlayShake() => PlaySFX(shakeSound);
+    public void PlayVictory() => PlaySFX(victorySound);
+    public void PlayAttack() => PlaySFX(attackSound);
+    public void PlayDeath() => PlaySFX(deathSound); // новый метод
+
+    private void PlaySFX(AudioClip clip)
+    {
+        if (clip == null) return;
+        sfxSource.PlayOneShot(clip, sfxVolume);
     }
 }

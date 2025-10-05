@@ -133,6 +133,8 @@ private void Start()
 
 private IEnumerator HandleBattleWonTransition()
 {
+
+
     Debug.Log("Победа! ✅");
 
     // затемняем экран
@@ -163,26 +165,29 @@ private IEnumerator HandleBattleWonTransition()
             victoryTextUI.transform.localScale = Vector3.Lerp(originalScale * 0.5f, originalScale, t);
             yield return null;
         }
-
+        
+        // 🔊 проигрываем звук победы
+            AudioManager.Instance?.PlayVictory();
+        
         // если не последняя волна — подождём и спрячем текст
-        if (!isLastWave)
-        {
-            yield return new WaitForSeconds(1.5f);
-            for (float t = 1; t >= 0; t -= Time.deltaTime / duration)
+            if (!isLastWave)
             {
-                cg.alpha = t;
-                victoryTextUI.transform.localScale = Vector3.Lerp(originalScale * 0.5f, originalScale, t);
-                yield return null;
+                yield return new WaitForSeconds(1.5f);
+                for (float t = 1; t >= 0; t -= Time.deltaTime / duration)
+                {
+                    cg.alpha = t;
+                    victoryTextUI.transform.localScale = Vector3.Lerp(originalScale * 0.5f, originalScale, t);
+                    yield return null;
+                }
+                victoryTextUI.SetActive(false);
+                victoryTextUI.transform.localScale = originalScale;
             }
-            victoryTextUI.SetActive(false);
-            victoryTextUI.transform.localScale = originalScale;
-        }
-        else
-        {
-            // последняя волна — текст остаётся, экран черный
-            cg.alpha = 1f;
-            victoryTextUI.transform.localScale = originalScale;
-        }
+            else
+            {
+                // последняя волна — текст остаётся, экран черный
+                cg.alpha = 1f;
+                victoryTextUI.transform.localScale = originalScale;
+            }
     }
 
     // очистка слотов и колоды

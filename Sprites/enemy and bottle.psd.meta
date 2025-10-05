@@ -361,10 +361,10 @@ TextureImporter:
       name: enemy and bottle_11
       rect:
         serializedVersion: 2
-        x: 1085
-        y: 467
-        width: 411
-        height: 417
+        x: 1055
+        y: 437
+        width: 441
+        height: 447
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -498,7 +498,7 @@ TextureImporter:
         width: 631
         height: 284
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 46, y: 29, z: 29, w: 46}
       customData: 
       outline: []
