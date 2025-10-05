@@ -28,23 +28,34 @@ private void UpdateCardPositions()
     List<CreatureInstance> creatures = GetCreatures();
     creatures.Sort((a, b) => a.transform.GetSiblingIndex().CompareTo(b.transform.GetSiblingIndex()));
 
-    float totalWidth = creatures.Count * cardSpacing;
-    float startX = -totalWidth * 0.5f + cardSpacing * 0.5f;
+    float spacing = cardSpacing;
+    float totalWidth = creatures.Count * spacing;
+    float startX = -totalWidth * 0.5f + spacing * 0.5f;
+
+    int placeholderIndex = placeholder != null ? placeholder.transform.GetSiblingIndex() : -1;
 
     for (int i = 0; i < creatures.Count; i++)
     {
         RectTransform rect = creatures[i].GetComponent<RectTransform>();
         if (rect != null)
         {
-            Vector2 targetPos = new Vector2(startX + i * cardSpacing, 0f);
+            // Если карта слева или справа от плейсхолдера, немного раздвигаем
+            float offset = 0f;
+            if (placeholderIndex >= 0)
+            {
+                if (i >= placeholderIndex)
+                    offset = spacing * 0.3f; // раздвигаем вправо
+                else if (i < placeholderIndex)
+                    offset = -spacing * 0.3f; // раздвигаем влево
+            }
 
-            // Получаем текущую скорость или создаём новую
+            Vector2 targetPos = new Vector2(startX + i * spacing + offset, 0f);
+
             if (!velocityMap.ContainsKey(rect))
                 velocityMap[rect] = Vector2.zero;
 
             Vector2 velocity = velocityMap[rect];
 
-            // Плавное смещение
             rect.anchoredPosition = Vector2.SmoothDamp(
                 rect.anchoredPosition,
                 targetPos,
@@ -58,6 +69,7 @@ private void UpdateCardPositions()
 
     UpdatePlaceholderPosition();
 }
+
 
 private void UpdatePlaceholderPosition()
 {
@@ -181,11 +193,17 @@ public void UpdatePlaceholder(PointerEventData eventData)
             if (hoveredCreature != null && !hoveredCreature.isDead)
             {
                 int replaceIndex = hoveredCreature.transform.GetSiblingIndex();
+
+                // Если есть карта, которая будет заменена, вызываем анимацию смерти
+                // Для союзника используем DeathAnimationAlly(), для врага - DeathAnimationEnemy()
                 if (hoveredCreature.cardData != null)
                     DeckManager.Instance.DiscardCard(hoveredCreature.cardData);
 
-                Destroy(hoveredCreature.gameObject);
+                // Вместо Destroy сразу, вызываем TakeDamage, чтобы проиграла анимация смерти
+                // Например, наносим урон равный текущему HP
+                hoveredCreature.TakeDamage(hoveredCreature.currentHP);
 
+                // Создаём новую карту на этом месте
                 GameObject go = Instantiate(card.data.creaturePrefab, slotPanel);
                 go.transform.SetSiblingIndex(replaceIndex);
 
