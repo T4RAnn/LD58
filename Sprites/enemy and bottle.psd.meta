@@ -476,7 +476,7 @@ TextureImporter:
         width: 219
         height: 312
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -485,6 +485,28 @@ TextureImporter:
       bones: []
       spriteID: e47b664f5887f9e4692b3820a4b55342
       internalID: 495588681
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: enemy and bottle_14
+      rect:
+        serializedVersion: 2
+        x: 682
+        y: 1598
+        width: 631
+        height: 284
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 46, y: 29, z: 29, w: 46}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b7df26447e96ff64c87379b8131598cf
+      internalID: -2015234964
       vertices: []
       indices: 
       edges: []

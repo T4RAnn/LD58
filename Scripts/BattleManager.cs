@@ -349,26 +349,43 @@ private IEnumerator AutoBattle()
     // --- Призыв существа перед собой ---
     private IEnumerator SummonAllyInFront(CreatureInstance summoner)
     {
+        if (summoner == null) yield break;
+
         Debug.Log($"{summoner.name} призывает существо перед собой!");
+
         ICreatureSlot slot = summoner.isEnemy ? (ICreatureSlot)enemySlot : playerSlot;
         var allies = slot.GetCreatures();
         int index = allies.IndexOf(summoner);
         if (index == -1) yield break;
 
+        // Выбираем префаб для призыва
         GameObject prefabToSummon = summoner.summonPrefab != null
             ? summoner.summonPrefab
-            : summoner.cardData.creaturePrefab; // по умолчанию вызываем свой префаб
+            : summoner.cardData?.creaturePrefab;
 
-        if (prefabToSummon != null)
+        if (prefabToSummon == null) yield break;
+
+        // Создаём новый экземпляр
+        GameObject newCreature = Instantiate(prefabToSummon, summoner.transform.parent);
+
+        // Рассчитываем безопасный индекс
+        int insertIndex = summoner.isEnemy ? Mathf.Max(0, index - 1) : Mathf.Min(allies.Count, index + 1);
+
+        // Ставим объект на нужную позицию в иерархии
+        newCreature.transform.SetSiblingIndex(insertIndex);
+
+    // Инициализируем CreatureInstance
+    var instance = newCreature.GetComponent<CreatureInstance>();
+        if (instance != null)
         {
-            GameObject newCreature = Instantiate(prefabToSummon, summoner.transform.parent);
-            newCreature.transform.SetSiblingIndex(
-                summoner.isEnemy ? index - 1 : index + 1
-            );
-            var instance = newCreature.GetComponent<CreatureInstance>();
-            instance.Initialize(1, 1, summoner.isEnemy); // можно задать stats из CardData
-            allies.Insert(index + (summoner.isEnemy ? -1 : 1), instance);
+            // Всегда 2/2 для призываемого монстра
+            int atk = 2;
+            int hp = 2;
+
+            instance.Initialize(atk, hp, summoner.isEnemy);
+            allies.Insert(insertIndex, instance);
         }
+
         yield return new WaitForSeconds(battleDelay);
     }
 

@@ -70,7 +70,7 @@ public class RewardManager : MonoBehaviour
             yield return null;
         }
 
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSeconds(1.5f);
 
         for (float t = 1; t >= 0; t -= Time.deltaTime / duration)
         {
