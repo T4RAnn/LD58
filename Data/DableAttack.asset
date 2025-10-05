@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cardName: Rewards
   jarSprite: {fileID: 3640602746580604733, guid: 7f48c94f68855f04fae0edcc47aa2c5a, type: 3}
-  creatureInside: {fileID: -571423904594484183, guid: 7f48c94f68855f04fae0edcc47aa2c5a, type: 3}
+  creatureInside: {fileID: 470199823, guid: 9631916f2f3af6b4e912bb27ac89b0ec, type: 3}
   creaturePrefab: {fileID: 5209615389429767607, guid: adc96e00978eaa64fbd9dc9a1bd4b176, type: 3}
-  attack: 1
-  health: 4
-  ability: 11
+  attack: 2
+  health: 2
+  ability: 10

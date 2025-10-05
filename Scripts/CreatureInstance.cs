@@ -5,27 +5,31 @@ using System.Collections;
 
 public class CreatureInstance : MonoBehaviour
 {
+    [Header("Статы")]
     public int currentHP;
     public int attack;
-    public int blockValue = 0; // 👈 блокируемое значение урона
+    public int blockValue = 0; // блокируемое значение урона
 
     [Header("Данные карты")]
     public CardData cardData;
     public AbilityType ability = AbilityType.None;
 
-    [Header("UI (опционально)")]
+    [Header("UI")]
     public TMP_Text hpText;
     public TMP_Text atkText;
     public Image creatureImage;
 
-    [Header("Иконка замены")]
+    [Header("Иконка смерти")]
     public GameObject skullIcon;
+
+    [Header("Банка (внутри префаба)")]
+    public GameObject jarObject; 
+
+    [Header("Призывной префаб (опционально)")]
+    public GameObject summonPrefab;
 
     [Header("Принадлежность")]
     public bool isEnemy;
-
-    [Header("Банка (внутри префаба)")]
-    public GameObject jarObject;   // 👈 объект банки в самом префабе (скрыт в инспекторе)
 
     public bool isDead => currentHP <= 0;
 
@@ -40,30 +44,64 @@ public class CreatureInstance : MonoBehaviour
             skullIcon.SetActive(false);
 
         if (jarObject != null)
-            jarObject.SetActive(false); // банка скрыта при старте
+            jarObject.SetActive(false); 
     }
 
     // === Инициализация ===
-    public void Initialize(int atk, int hp, bool enemy = false, CardData data = null)
+public void Initialize(int atk, int hp, bool enemy = false, CardData data = null, GameObject summon = null)
+{
+    attack = atk;
+    currentHP = hp;
+    isEnemy = enemy;
+    cardData = data;
+    summonPrefab = summon;
+
+    ability = (cardData != null) ? cardData.ability : AbilityType.None;
+
+if (creatureImage != null && cardData != null && cardData.creatureInside != null)
+{
+    creatureImage.sprite = cardData.creatureInside;
+
+    // Подгоняем размер под maxSize
+    var scaler = creatureImage.GetComponent<CreatureImageScaler>();
+    if (scaler != null) scaler.ApplyScale();
+}
+
+if (jarObject != null && cardData != null && cardData.jarSprite != null)
+{
+    Image jarImg = jarObject.GetComponent<Image>();
+    if (jarImg != null)
     {
-        attack = atk;
-        currentHP = hp;
-        isEnemy = enemy;
+        jarImg.sprite = cardData.jarSprite;
 
-        cardData = data;
-        ability = (cardData != null) ? cardData.ability : AbilityType.None;
-
-        Debug.Log($"Init creature {name} | cardData={(cardData != null ? cardData.cardName : "null")} | ability={ability}");
-
-        UpdateUI();
-
-        if (skullIcon != null)
-            skullIcon.SetActive(false);
+        var scaler = jarImg.GetComponent<CreatureImageScaler>();
+        if (scaler != null) scaler.ApplyScale();
     }
+}
 
-    // === Управление черепком ===
-    public void ShowSkullIcon() { if (skullIcon != null) skullIcon.SetActive(true); }
-    public void HideSkullIcon() { if (skullIcon != null) skullIcon.SetActive(false); }
+    UpdateUI();
+
+    if (skullIcon != null)
+        skullIcon.SetActive(false);
+}
+
+// === Новый метод для масштабирования Image ===
+private void SetImageWithMaxSize(Image image, Sprite sprite, Vector2 maxSize)
+{
+    image.sprite = sprite;
+
+    float spriteWidth = sprite.rect.width;
+    float spriteHeight = sprite.rect.height;
+
+    float scaleX = maxSize.x / spriteWidth;
+    float scaleY = maxSize.y / spriteHeight;
+
+    float finalScale = Mathf.Min(scaleX, scaleY);
+
+    RectTransform rt = image.rectTransform;
+    rt.sizeDelta = new Vector2(spriteWidth * finalScale, spriteHeight * finalScale);
+}
+
 
     // === Баф ===
     public void ApplyBuff(int atkDelta, int hpDelta)
@@ -71,13 +109,10 @@ public class CreatureInstance : MonoBehaviour
         attack += atkDelta;
         currentHP += hpDelta;
 
-        Debug.Log($"{name} получил баф: atk+{atkDelta}, hp+{hpDelta}");
-
         UpdateUI();
 
         if (atkDelta != 0 && atkText != null)
             StartCoroutine(BuffFlash(atkText, Color.green, 0.3f));
-
         if (hpDelta != 0 && hpText != null)
             StartCoroutine(BuffFlash(hpText, Color.green, 0.3f));
     }
@@ -87,12 +122,8 @@ public class CreatureInstance : MonoBehaviour
     {
         if (isDead) return;
 
-        // 🔹 Учитываем блок
         int blocked = Mathf.Min(blockValue, dmg);
         dmg -= blocked;
-        Debug.Log($"{name} блокирует {blocked} урона!");
-        // НЕ снимаем blockValue полностью, он остаётся до окончания эффекта
-        // blockValue -= blocked; // ← убрать эту строку, если хочешь, чтобы блок срабатывал каждый раз
 
         currentHP -= dmg;
         if (currentHP < 0) currentHP = 0;
@@ -101,10 +132,8 @@ public class CreatureInstance : MonoBehaviour
 
         if (currentHP == 0)
         {
-            if (isEnemy)
-                StartCoroutine(DeathAnimationEnemy());
-            else
-                StartCoroutine(DeathAnimationAlly());
+            if (isEnemy) StartCoroutine(DeathAnimationEnemy());
+            else StartCoroutine(DeathAnimationAlly());
         }
         else
         {
@@ -113,6 +142,91 @@ public class CreatureInstance : MonoBehaviour
         }
     }
 
+    // === UI ===
+    public void UpdateUI()
+    {
+        if (hpText != null) hpText.text = currentHP.ToString();
+        if (atkText != null) atkText.text = attack.ToString();
+    }
+
+    // === Анимации ===
+    public IEnumerator DoAttackAnimation(bool isEnemyAttack)
+    {
+        Vector3 startPos = transform.localPosition;
+        Vector3 targetPos = startPos + (isEnemyAttack ? Vector3.left : Vector3.right) * 50f;
+
+        float t = 0;
+        while (t < 1f)
+        {
+            t += Time.deltaTime * 5f;
+            transform.localPosition = Vector3.Lerp(startPos, targetPos, Mathf.Sin(t * Mathf.PI));
+            yield return null;
+        }
+
+        transform.localPosition = startPos;
+    }
+
+    public IEnumerator Shake(float duration, float magnitude)
+    {
+        Vector3 originalPos = transform.localPosition;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            float offsetX = Random.Range(-1f, 1f) * magnitude;
+            float offsetY = Random.Range(-1f, 1f) * magnitude;
+            transform.localPosition = originalPos + new Vector3(offsetX, offsetY, 0);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        transform.localPosition = originalPos;
+    }
+
+    private IEnumerator HitFlash(float duration)
+    {
+        if (creatureImage != null)
+        {
+            creatureImage.color = Color.red;
+            yield return new WaitForSeconds(duration);
+            creatureImage.color = originalColor;
+        }
+    }
+
+    private IEnumerator BuffFlash(TMP_Text textElement, Color flashColor, float duration)
+    {
+        Color original = textElement.color;
+        textElement.color = flashColor;
+        yield return new WaitForSeconds(duration);
+        textElement.color = original;
+    }
+
+    public IEnumerator SpawnAnimationFlyOff(float delay = 0.2f, float flyDistance = 800f, float flyDuration = 0.6f)
+    {
+        if (jarObject == null) yield break;
+
+        jarObject.SetActive(true);
+        RectTransform jarRect = jarObject.GetComponent<RectTransform>();
+        Vector3 startPos = jarRect.localPosition;
+
+        yield return new WaitForSeconds(delay);
+
+        float randomX = Random.Range(-150f, 150f);
+        Vector3 targetPos = startPos + new Vector3(randomX, -flyDistance, 0);
+        float randomRotation = Random.Range(-40f, 40f);
+
+        float t = 0f;
+        while (t < 1f)
+        {
+            t += Time.deltaTime / flyDuration;
+            float eased = Mathf.Pow(t, 1.7f);
+            jarRect.localPosition = Vector3.Lerp(startPos, targetPos, eased);
+            jarRect.rotation = Quaternion.Euler(0, 0, Mathf.Lerp(0, randomRotation, eased));
+            yield return null;
+        }
+
+        jarObject.SetActive(false);
+    }
 // === Враги: сжатие + исчезновение ===
 private IEnumerator DeathAnimationEnemy()
 {
@@ -135,7 +249,6 @@ private IEnumerator DeathAnimationEnemy()
         yield return null;
     }
 
-    // анимация банки, если есть
     if (jarObject != null)
         StartCoroutine(SpawnAnimationFlyOff());
 
@@ -150,7 +263,7 @@ private IEnumerator DeathAnimationAlly()
     cg.interactable = false;
     cg.blocksRaycasts = false;
 
-    Transform discardPile = DeckManager.Instance.discardPileTransform; // ссылка на объект сброса
+    Transform discardPile = DeckManager.Instance.discardPileTransform;
     if (discardPile == null)
     {
         Destroy(gameObject);
@@ -165,7 +278,6 @@ private IEnumerator DeathAnimationAlly()
     float duration = 0.8f;
     float elapsed = 0f;
 
-    // параметры зигзага
     float zigzagMagnitude = 30f;
     int zigzagCount = 3;
 
@@ -174,153 +286,26 @@ private IEnumerator DeathAnimationAlly()
         elapsed += Time.deltaTime;
         float t = elapsed / duration;
 
-        // движение к сбросу
         Vector3 basePos = Vector3.Lerp(startPos, targetPos, Mathf.SmoothStep(0, 1, t));
-
-        // добавляем зигзаг по X
-        float zigzagOffset = Mathf.Sin(t * Mathf.PI * zigzagCount) * zigzagMagnitude * (1 - t); // уменьшается к концу
+        float zigzagOffset = Mathf.Sin(t * Mathf.PI * zigzagCount) * zigzagMagnitude * (1 - t);
         transform.position = basePos + new Vector3(zigzagOffset, 0, 0);
 
-        // вращение по Z
-        float rotationZ = Mathf.Lerp(0f, 180f, t); // разворот на 180 градусов по пути
+        float rotationZ = Mathf.Lerp(0f, 180f, t);
         transform.rotation = Quaternion.Euler(0, 0, rotationZ);
 
-        // уменьшение и прозрачность
         transform.localScale = Vector3.Lerp(originalScale, targetScale, t);
         cg.alpha = Mathf.Lerp(1f, 0f, t);
 
         yield return null;
     }
 
-    // дискард карты и удаление объекта
     if (cardData != null)
         DeckManager.Instance.DiscardCard(cardData);
 
     Destroy(gameObject);
 }
 
-
-    public void UpdateUI()
-    {
-        if (hpText != null) hpText.text = currentHP.ToString();
-        if (atkText != null) atkText.text = attack.ToString();
-    }
-
-    // === Атака ===
-    // === Процедурная анимация атаки ===
-    public IEnumerator DoAttackAnimation(bool isEnemyAttack)
-    {
-        Vector3 startPos = transform.localPosition;
-        Vector3 targetPos = startPos + (isEnemyAttack ? Vector3.left : Vector3.right) * 50f; // рывок в сторону
-
-        float t = 0;
-        while (t < 1f)
-        {
-            t += Time.deltaTime * 5f;
-            transform.localPosition = Vector3.Lerp(startPos, targetPos, Mathf.Sin(t * Mathf.PI));
-            yield return null;
-        }
-
-        transform.localPosition = startPos; // возвращаем на место
-    }
-
-    // === Тряска при уроне ===
-    public IEnumerator Shake(float duration, float magnitude)
-    {
-        Vector3 originalPos = transform.localPosition;
-        float elapsed = 0f;
-
-        while (elapsed < duration)
-        {
-            float offsetX = Random.Range(-1f, 1f) * magnitude;
-            float offsetY = Random.Range(-1f, 1f) * magnitude;
-
-            transform.localPosition = originalPos + new Vector3(offsetX, offsetY, 0);
-
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        transform.localPosition = originalPos;
-    }
-
-    // === Вспышка при получении урона ===
-    private IEnumerator HitFlash(float duration)
-    {
-        if (creatureImage != null)
-        {
-            creatureImage.color = Color.red;
-            yield return new WaitForSeconds(duration);
-            creatureImage.color = originalColor;
-        }
-    }
-
-    // === Вспышка при получении бафа ===
-    public IEnumerator BuffFlash(float duration)
-    {
-        if (hpText != null) hpText.color = Color.green;
-        if (atkText != null) atkText.color = Color.green;
-
-        yield return new WaitForSeconds(duration);
-
-        if (hpText != null) hpText.color = Color.white;
-        if (atkText != null) atkText.color = Color.white;
-    }
-
-    // универсальный метод подсветки конкретного текста
-    private IEnumerator BuffFlash(TMP_Text textElement, Color flashColor, float duration)
-    {
-        Color original = textElement.color;
-        textElement.color = flashColor;
-        yield return new WaitForSeconds(duration);
-        textElement.color = original;
-    }
-
-    // === Анимация банки (встроенной в префаб) ===
-public IEnumerator SpawnAnimationFlyOff(
-    float delayBeforeFall = 0.2f, 
-    float flyDistance = 800f, 
-    float flyDuration = 0.6f)
-{
-    if (jarObject == null)
-        yield break;
-
-    jarObject.SetActive(true);
-
-    RectTransform jarRect = jarObject.GetComponent<RectTransform>();
-    Vector3 startPos = jarRect.localPosition;
-
-    // Монстр сразу виден
-    if (creatureImage != null)
-        creatureImage.color = originalColor;
-    if (atkText != null) atkText.alpha = 1f;
-    if (hpText != null) hpText.alpha = 1f;
-
-    // ⏳ Задержка перед падением
-    yield return new WaitForSeconds(delayBeforeFall);
-
-    // Случайное смещение по X
-    float randomX = Random.Range(-150f, 150f);
-
-    // Цель — далеко за экран вниз
-    Vector3 targetPos = startPos + new Vector3(randomX, -flyDistance, 0);
-
-    // Случайный наклон банки
-    float randomRotation = Random.Range(-40f, 40f);
-
-    float t = 0f;
-    while (t < 1f)
-    {
-        t += Time.deltaTime / flyDuration;
-        float eased = Mathf.Pow(t, 1.7f); // ускорение вниз
-        jarRect.localPosition = Vector3.Lerp(startPos, targetPos, eased);
-        jarRect.rotation = Quaternion.Euler(0, 0, Mathf.Lerp(0, randomRotation, eased));
-        yield return null;
-    }
-
-    // Банка исчезает
-    jarObject.SetActive(false);
-}
-
-
+    // === Черепок ===
+    public void ShowSkullIcon() { if (skullIcon != null) skullIcon.SetActive(true); }
+    public void HideSkullIcon() { if (skullIcon != null) skullIcon.SetActive(false); }
 }

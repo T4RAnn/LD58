@@ -1,7 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections.Generic;
+using TMPro;
 using System.Collections;
+using System.Collections.Generic;
 
 public class RewardManager : MonoBehaviour
 {
@@ -12,35 +13,120 @@ public class RewardManager : MonoBehaviour
     [Header("UI Панель награды")]
     public GameObject rewardPanelUI;
 
-    [Header("Пул наград")]
-    public List<CardData> rewardPool = new List<CardData>();
+    [Header("Текст настроения")]
+    public TMP_Text rewardIntroTextLine1;
+    public TMP_Text rewardIntroTextLine2;
 
-    private List<CardData> rewardChoices = new List<CardData>();
+    private List<CardData> currentRewardChoices = new List<CardData>();
 
-    public void ShowRewards(List<CardData> customPool = null)
+    // Показываем награду из конкретного списка врагов
+    public void ShowRewardsFromEnemies(List<CardData> enemies)
+    {
+        StartCoroutine(ShowRewardsRoutine(enemies));
+    }
+
+    private IEnumerator ShowRewardIntro(string line1, string line2)
+    {
+        if (rewardIntroTextLine1 == null)
+        {
+            GameObject go1 = new GameObject("RewardIntroLine1");
+            go1.transform.SetParent(rewardPanelUI.transform, false);
+            rewardIntroTextLine1 = go1.AddComponent<TMP_Text>();
+            rewardIntroTextLine1.fontSize = 36;
+            rewardIntroTextLine1.alignment = TextAlignmentOptions.Center;
+            rewardIntroTextLine1.color = Color.white;
+            rewardIntroTextLine1.rectTransform.anchoredPosition = new Vector2(0, 50);
+        }
+
+        if (rewardIntroTextLine2 == null)
+        {
+            GameObject go2 = new GameObject("RewardIntroLine2");
+            go2.transform.SetParent(rewardPanelUI.transform, false);
+            rewardIntroTextLine2 = go2.AddComponent<TMP_Text>();
+            rewardIntroTextLine2.fontSize = 28;
+            rewardIntroTextLine2.alignment = TextAlignmentOptions.Center;
+            rewardIntroTextLine2.color = Color.white;
+            rewardIntroTextLine2.rectTransform.anchoredPosition = new Vector2(0, -10);
+        }
+
+        rewardIntroTextLine1.text = line1;
+        rewardIntroTextLine2.text = line2;
+
+        rewardIntroTextLine1.gameObject.SetActive(true);
+        rewardIntroTextLine2.gameObject.SetActive(true);
+
+        CanvasGroup cg1 = rewardIntroTextLine1.GetComponent<CanvasGroup>();
+        if (cg1 == null) cg1 = rewardIntroTextLine1.gameObject.AddComponent<CanvasGroup>();
+        CanvasGroup cg2 = rewardIntroTextLine2.GetComponent<CanvasGroup>();
+        if (cg2 == null) cg2 = rewardIntroTextLine2.gameObject.AddComponent<CanvasGroup>();
+
+        cg1.alpha = 0;
+        cg2.alpha = 0;
+
+        float duration = 0.5f;
+        for (float t = 0; t <= 1; t += Time.deltaTime / duration)
+        {
+            cg1.alpha = t;
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(1f);
+
+        for (float t = 1; t >= 0; t -= Time.deltaTime / duration)
+        {
+            cg1.alpha = t;
+            yield return null;
+        }
+        rewardIntroTextLine1.gameObject.SetActive(false);
+        cg2.alpha = 1f;
+    }
+
+    private IEnumerator ShowRewardsRoutine(List<CardData> enemies)
     {
         ClearRewards();
 
-        var pool = (customPool != null && customPool.Count > 0) ? customPool : rewardPool;
+        rewardPanelUI.SetActive(true);
 
-        rewardChoices.Clear();
-        for (int i = 0; i < 3; i++)
+        yield return StartCoroutine(ShowRewardIntro(
+            "The battle is done. The cowed monsters await your selection.",
+            "Choose one to bind to your will"
+        ));
+
+        currentRewardChoices.Clear();
+        int count = Mathf.Min(3, enemies.Count);
+
+        List<CardData> availableEnemies = new List<CardData>(enemies);
+        for (int i = 0; i < count; i++)
         {
-            CardData randomCard = GetRandomCard(pool);
-            rewardChoices.Add(randomCard);
+            int index = Random.Range(0, availableEnemies.Count);
+            CardData enemy = availableEnemies[index];
+            availableEnemies.RemoveAt(index);
+
+            currentRewardChoices.Add(enemy);
 
             GameObject cardGO = Instantiate(rewardCardPrefab, rewardContainer);
+            cardGO.SetActive(false);
             RewardCardUI rewardUI = cardGO.GetComponent<RewardCardUI>();
-            rewardUI.Setup(randomCard, this, i);
-        }
+            rewardUI.Setup(enemy, this, i);
 
-        if (rewardPanelUI != null)
-            rewardPanelUI.SetActive(true);
+            StartCoroutine(FadeInCardAndEnable(cardGO));
+            yield return new WaitForSeconds(0.2f);
+        }
     }
 
-    private CardData GetRandomCard(List<CardData> pool)
+    private IEnumerator FadeInCardAndEnable(GameObject cardGO)
     {
-        return pool[Random.Range(0, pool.Count)];
+        cardGO.SetActive(true);
+        CanvasGroup cg = cardGO.GetComponent<CanvasGroup>();
+        if (cg == null) cg = cardGO.AddComponent<CanvasGroup>();
+
+        cg.alpha = 0;
+        float duration = 0.5f;
+        for (float t = 0; t <= 1; t += Time.deltaTime / duration)
+        {
+            cg.alpha = t;
+            yield return null;
+        }
     }
 
     private void ClearRewards()
@@ -49,49 +135,30 @@ public class RewardManager : MonoBehaviour
             Destroy(child.gameObject);
     }
 
-public void OnCardSelected(RewardCardUI selectedCardUI)
-{
-    if (DeckManager.Instance == null)
+    public void OnCardSelected(RewardCardUI selectedCardUI)
     {
-        Debug.LogError("DeckManager.Instance = null!");
-        return;
+        selectedCardUI.GetComponent<Button>().interactable = false;
+        Canvas rootCanvas = FindObjectOfType<Canvas>();
+        selectedCardUI.transform.SetParent(rootCanvas.transform, true);
+        StartCoroutine(AnimateRewardCard(selectedCardUI));
     }
-
-    // отключаем возможность кликать на карту
-    selectedCardUI.GetComponent<Button>().interactable = false;
-
-    // переносим карту на уровень Canvas, чтобы она не зависела от rewardPanelUI
-    Canvas rootCanvas = FindObjectOfType<Canvas>();
-    selectedCardUI.transform.SetParent(rootCanvas.transform, true);
-
-    // запускаем анимацию полёта карты + скрытие панели
-    StartCoroutine(AnimateRewardCard(selectedCardUI));
-}
 
     private IEnumerator AnimateRewardCard(RewardCardUI cardUI)
     {
-        // анимация полёта карты (можно в колоду или центр экрана)
         yield return cardUI.StartCoroutine(cardUI.FlyToDeck(DeckManager.Instance.deckIconTransform));
 
-        // скрываем панель награды после окончания анимации
         if (rewardPanelUI != null)
             rewardPanelUI.SetActive(false);
 
-        // добавляем карту в колоду (если не сделано внутри FlyToDeck)
         DeckManager.Instance.deck.Add(cardUI.cardData);
 
         Destroy(cardUI.gameObject);
 
-        // включаем слоты обратно
         var gm = FindObjectOfType<GameManager>();
-        gm.playerSlot.gameObject.SetActive(true);
-        gm.enemySlot.gameObject.SetActive(true);
-
-
-        // запускаем следующую волну и ход
         gm.currentWaveIndex++;
-        gm.StartWave(gm.currentWaveIndex);
-        gm.StartPlayerTurn();
-    }
+        yield return gm.StartCoroutine(gm.TransitionToNextWave());
 
+        if (rewardIntroTextLine2 != null)
+            rewardIntroTextLine2.gameObject.SetActive(false);
+    }
 }

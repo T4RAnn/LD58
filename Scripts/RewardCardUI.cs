@@ -6,11 +6,13 @@ using System.Collections;
 
 public class RewardCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
+    [Header("UI элементы карты")]
+    public Image creatureImage;      // <— добавлено поле для изображения
     public TMP_Text atkText;
     public TMP_Text hpText;
     public Button selectButton;
 
-    public CardData cardData;
+    [HideInInspector] public CardData cardData;
     private RewardManager rewardManager;
     private RectTransform rect;
     private Vector3 originalScale;
@@ -28,9 +30,29 @@ public class RewardCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
         cardData = data;
         rewardManager = manager;
 
-        atkText.text = $"{data.attack}";
-        hpText.text = $"{data.health}";
+        // === обновление UI ===
+        if (atkText) atkText.text = data.attack.ToString();
+        if (hpText) hpText.text = data.health.ToString();
 
+        if (creatureImage)
+        {
+            if (data.creatureInside != null)
+            {
+                creatureImage.sprite = data.creatureInside;
+
+                // Автоматическая подгонка размера через CreatureImageScaler
+                var scaler = creatureImage.GetComponent<CreatureImageScaler>();
+                if (scaler != null)
+                    scaler.ApplyScale();
+            }
+            else
+            {
+                creatureImage.sprite = null; // сброс если нет спрайта
+            }
+        }
+
+        // Настройка кнопки выбора
+        selectButton.onClick.RemoveAllListeners();
         selectButton.onClick.AddListener(() => rewardManager.OnCardSelected(this));
     }
 
@@ -69,41 +91,36 @@ public class RewardCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
     }
 
     // === Анимация полета награды по дуге в колоду ===
-public IEnumerator FlyToDeck(Transform deckTransform)
-{
-    selectButton.interactable = false;
-
-    Vector3 startPos = rect.position;
-    Vector3 endPos = deckTransform.position;
-    Vector3 startScale = rect.localScale;
-    Vector3 endScale = Vector3.zero; // уменьшаем до 0
-
-    float duration = 0.8f;
-    float elapsed = 0f;
-
-    float arcHeight = 150f; // высота дуги
-
-    while (elapsed < duration)
+    public IEnumerator FlyToDeck(Transform deckTransform)
     {
-        elapsed += Time.deltaTime;
-        float t = elapsed / duration;
-        t = Mathf.SmoothStep(0f, 1f, t);
+        selectButton.interactable = false;
 
-        // полёт по дуге
-        Vector3 midPoint = Vector3.Lerp(startPos, endPos, t);
-        midPoint.y += Mathf.Sin(t * Mathf.PI) * arcHeight;
+        Vector3 startPos = rect.position;
+        Vector3 endPos = deckTransform.position;
+        Vector3 startScale = rect.localScale;
+        Vector3 endScale = Vector3.zero;
 
-        rect.position = midPoint;
-        rect.localScale = Vector3.Lerp(startScale, endScale, t);
-        rect.rotation = Quaternion.Euler(0, 0, Mathf.Lerp(0, 360f, t)); // вращение для динамики
+        float duration = 0.8f;
+        float elapsed = 0f;
+        float arcHeight = 150f;
 
-        yield return null;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            t = Mathf.SmoothStep(0f, 1f, t);
+
+            Vector3 midPoint = Vector3.Lerp(startPos, endPos, t);
+            midPoint.y += Mathf.Sin(t * Mathf.PI) * arcHeight;
+
+            rect.position = midPoint;
+            rect.localScale = Vector3.Lerp(startScale, endScale, t);
+            rect.rotation = Quaternion.Euler(0, 0, Mathf.Lerp(0, 360f, t));
+
+            yield return null;
+        }
+
+        DeckManager.Instance.deck.Add(cardData);
+        Destroy(gameObject);
     }
-
-    // добавляем карту в колоду
-    DeckManager.Instance.deck.Add(cardData);
-
-    Destroy(gameObject);
-}
-
 }

@@ -1,7 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
+using TMPro;
+
 public class GameManager : MonoBehaviour
 {
     [Header("Основные менеджеры")]
@@ -24,19 +27,53 @@ public class GameManager : MonoBehaviour
     public Button pauseButton;
     public Button normalButton;
     public Button fastButton;
-    public GameObject rewardPanel; // UI панель награды
-    public CanvasGroup fadePanel; // присвоить в инспекторе
+    public GameObject rewardPanel;
+    public CanvasGroup fadePanel; // назначить в инспекторе
+
+    [Header("UI Текст победы")]
+    public GameObject victoryTextUI; // текст "YOU WON!"
+
+private void Start()
+{
+    if (victoryTextUI != null)
+        victoryTextUI.SetActive(false); // точно скрываем при старте
+
+    if (fadePanel != null)
+        StartCoroutine(FadeIn(1.2f));
+
+    StartPlayerTurn();
+    StartWave(currentWaveIndex);
+
+    if (pauseButton != null) pauseButton.onClick.AddListener(TogglePause);
+    if (normalButton != null) normalButton.onClick.AddListener(SetNormalMode);
+    if (fastButton != null) fastButton.onClick.AddListener(SetFastMode);
+}
 
 
-    private void Start()
+    // === Плавное проявление / исчезновение ===
+    private IEnumerator FadeIn(float duration = 1f)
     {
-        StartPlayerTurn();
-        StartWave(currentWaveIndex);
+        fadePanel.alpha = 1f;
+        fadePanel.gameObject.SetActive(true);
+        while (fadePanel.alpha > 0f)
+        {
+            fadePanel.alpha -= Time.deltaTime / duration;
+            yield return null;
+        }
+        fadePanel.alpha = 0f;
+        fadePanel.gameObject.SetActive(false);
+    }
 
-        // подписка на кнопки
-        if (pauseButton != null) pauseButton.onClick.AddListener(TogglePause);
-        if (normalButton != null) normalButton.onClick.AddListener(SetNormalMode);
-        if (fastButton != null) fastButton.onClick.AddListener(SetFastMode);
+    private IEnumerator FadeOut(float duration = 1f)
+    {
+        fadePanel.gameObject.SetActive(true);
+        fadePanel.alpha = 0f;
+        while (fadePanel.alpha < 1f)
+        {
+            fadePanel.alpha += Time.deltaTime / duration;
+            yield return null;
+        }
+        fadePanel.alpha = 1f;
     }
 
     // --- Управление ходами ---
@@ -51,14 +88,11 @@ public class GameManager : MonoBehaviour
         if (!isPlayerTurn) return;
         isPlayerTurn = false;
 
-        // Сбросить все карты из руки в discard
         deckManager.EndTurn();
-
-        // запускаем автобой
         battleManager.StartBattle();
     }
 
-    // --- Запуск волны врагов ---
+    // --- Волны врагов ---
     public void StartWave(int index)
     {
         ClearEnemies();
@@ -69,10 +103,8 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // берём нужную волну
         EnemyWave wave = enemyWaves[index];
 
-        // перебираем врагов внутри волны
         foreach (CardData enemyCard in wave.enemies)
         {
             if (enemyCard == null || enemyCard.creaturePrefab == null) continue;
@@ -85,7 +117,6 @@ public class GameManager : MonoBehaviour
         Debug.Log($"Волна {index + 1} началась!");
     }
 
-    // --- Очистка врагов между боями ---
     private void ClearEnemies()
     {
         foreach (Transform child in enemySlot.transform)
@@ -94,79 +125,156 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // --- Вызов после победы ---
+    // --- Победа ---
+    public void OnBattleWon()
+    {
+        StartCoroutine(HandleBattleWonTransition());
+    }
 
-public void OnBattleWon()
+private IEnumerator HandleBattleWonTransition()
 {
     Debug.Log("Победа! ✅");
 
+    // затемняем экран
+    yield return StartCoroutine(FadeOut(0.8f));
+
+    // проверяем, последняя ли волна
+    bool isLastWave = currentWaveIndex >= enemyWaves.Count - 1;
+
+    if (victoryTextUI != null)
+    {
+        victoryTextUI.SetActive(true);
+        CanvasGroup cg = victoryTextUI.GetComponent<CanvasGroup>();
+        if (cg == null) cg = victoryTextUI.AddComponent<CanvasGroup>();
+        cg.alpha = 0;
+        Vector3 originalScale = victoryTextUI.transform.localScale;
+        victoryTextUI.transform.localScale = originalScale * 0.5f;
+
+        TMP_Text tmpText = victoryTextUI.GetComponent<TMP_Text>();
+        if (tmpText != null)
+        {
+            tmpText.text = isLastWave ? "Thank you for playing!" : "YOU WON!";
+        }
+
+        float duration = 0.5f;
+        for (float t = 0; t <= 1; t += Time.deltaTime / duration)
+        {
+            cg.alpha = t;
+            victoryTextUI.transform.localScale = Vector3.Lerp(originalScale * 0.5f, originalScale, t);
+            yield return null;
+        }
+
+        // если не последняя волна — подождём и спрячем текст
+        if (!isLastWave)
+        {
+            yield return new WaitForSeconds(1.5f);
+            for (float t = 1; t >= 0; t -= Time.deltaTime / duration)
+            {
+                cg.alpha = t;
+                victoryTextUI.transform.localScale = Vector3.Lerp(originalScale * 0.5f, originalScale, t);
+                yield return null;
+            }
+            victoryTextUI.SetActive(false);
+            victoryTextUI.transform.localScale = originalScale;
+        }
+        else
+        {
+            // последняя волна — текст остаётся, экран черный
+            cg.alpha = 1f;
+            victoryTextUI.transform.localScale = originalScale;
+        }
+    }
+
+    // очистка слотов и колоды
     ClearAllSlots();
     ResetDeck();
 
-    // скрыть слоты на время награды
+    // скрываем слоты перед показом награды
     playerSlot.gameObject.SetActive(false);
     enemySlot.gameObject.SetActive(false);
 
-    // показать награду
+    // показываем панель наград
     rewardPanel.SetActive(true);
-    rewardManager.ShowRewards();
+
+    // 🎯 Награды из текущей волны
+    if (!isLastWave && currentWaveIndex < enemyWaves.Count)
+    {
+        List<CardData> currentEnemies = enemyWaves[currentWaveIndex].enemies;
+        if (currentEnemies != null && currentEnemies.Count > 0)
+        {
+            rewardManager.ShowRewardsFromEnemies(currentEnemies);
+        }
+    }
+
+    // возвращаем плавное проявление фона только если не последняя волна
+    if (!isLastWave)
+        yield return StartCoroutine(FadeIn(0.8f));
 }
 
-// --- Полная очистка всех слотов ---
-private void ClearAllSlots()
-{
-        // --- игрок ---
+
+
+    // --- Новый метод для перехода после награды ---
+    public IEnumerator TransitionToNextWave()
+    {
+        yield return StartCoroutine(FadeOut(0.8f));
+
+        playerSlot.gameObject.SetActive(true);
+        enemySlot.gameObject.SetActive(true);
+
+        StartWave(currentWaveIndex);
+        StartPlayerTurn();
+
+        yield return StartCoroutine(FadeIn(0.8f));
+    }
+
+    private void ClearAllSlots()
+    {
         foreach (Transform child in playerSlot.slotPanel)
         {
             CreatureInstance creature = child.GetComponent<CreatureInstance>();
             if (creature != null && !creature.isEnemy && creature.cardData != null)
             {
-                // запускаем анимацию улета карты в discard
-                DeckManager.Instance.StartCoroutine(DeckManager.Instance.AnimateToDiscardCard(creature.cardData, child.gameObject));
+                DeckManager.Instance.StartCoroutine(
+                    DeckManager.Instance.AnimateToDiscardCard(creature.cardData, child.gameObject)
+                );
             }
         }
 
-    // --- враги ---
-    foreach (Transform child in enemySlot.transform)
-    {
-        Destroy(child.gameObject); // враги не возвращаются в колоду
-    }
-}
-
-
-// --- Сброс и возврат всех карт в колоду ---
-private void ResetDeck()
-{
-    // Сбросить всё из руки в сброс
-    DeckManager.Instance.EndTurn();
-
-    // Вернуть все карты из сброса в колоду
-    DeckManager.Instance.deck.AddRange(DeckManager.Instance.discardPile);
-    DeckManager.Instance.discardPile.Clear();
-
-    // Перемешать
-    var deck = DeckManager.Instance.deck;
-    for (int i = 0; i < deck.Count; i++)
-    {
-        var temp = deck[i];
-        int randomIndex = Random.Range(i, deck.Count);
-        deck[i] = deck[randomIndex];
-        deck[randomIndex] = temp;
+        foreach (Transform child in enemySlot.transform)
+        {
+            Destroy(child.gameObject);
+        }
     }
 
-    Debug.Log("Все карты возвращены в колоду и перемешаны");
-}
+    private void ResetDeck()
+    {
+        DeckManager.Instance.EndTurn();
+        DeckManager.Instance.deck.AddRange(DeckManager.Instance.discardPile);
+        DeckManager.Instance.discardPile.Clear();
 
+        var deck = DeckManager.Instance.deck;
+        for (int i = 0; i < deck.Count; i++)
+        {
+            var temp = deck[i];
+            int randomIndex = Random.Range(i, deck.Count);
+            deck[i] = deck[randomIndex];
+            deck[randomIndex] = temp;
+        }
 
-    // --- Вызов после поражения ---
+        Debug.Log("Все карты возвращены в колоду и перемешаны");
+    }
+
     public void OnBattleLost()
     {
-        Debug.Log("Игрок проиграл ❌");
-        // рестарт сцены
+        StartCoroutine(RestartWithFade());
+    }
+
+    private IEnumerator RestartWithFade()
+    {
+        yield return StartCoroutine(FadeOut(0.8f));
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
-    // --- Кнопки управления ---
     private void TogglePause()
     {
         battleManager.isPaused = !battleManager.isPaused;
@@ -191,5 +299,7 @@ private void ResetDeck()
 [System.Serializable]
 public class EnemyWave
 {
-    public List<CardData> enemies; // список врагов для этой волны
+    public List<CardData> enemies;
+    [Tooltip("Индекс заготовки награды после победы над этой волной")]
+    public int rewardTemplateIndex = 0;
 }

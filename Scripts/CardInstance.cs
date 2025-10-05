@@ -19,6 +19,10 @@ public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
     public TMP_Text atkText;
     public TMP_Text hpText;
 
+    [Header("UI изображения")]
+    public Image jarImage;
+    public Image creatureImage;
+
     private void Awake()
     {
         canvasGroup = GetComponent<CanvasGroup>();
@@ -172,6 +176,8 @@ public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         transform.position = targetPos;
     }
 
+
+
     public void UpdateUI()
     {
         if (data == null) return;
@@ -181,5 +187,23 @@ public class CardInstance : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
         if (hpText != null)
             hpText.text = data.health.ToString();
+
+if (creatureImage != null && data.creatureInside != null)
+{
+    creatureImage.sprite = data.creatureInside;
+
+    var scaler = creatureImage.GetComponent<CreatureImageScaler>();
+    if (scaler != null) scaler.ApplyScale();
+}
+
+if (jarImage != null && data.jarSprite != null)
+{
+    jarImage.sprite = data.jarSprite;
+
+    var scaler = jarImage.GetComponent<CreatureImageScaler>();
+    if (scaler != null) scaler.ApplyScale();
+}
+
     }
+
 }

@@ -1101,7 +1101,6 @@ GameObject:
   - component: {fileID: 729242368}
   - component: {fileID: 729242367}
   - component: {fileID: 729242364}
-  - component: {fileID: 729242366}
   m_Layer: 5
   m_Name: EnemySlot
   m_TagString: Untagged
@@ -1121,6 +1120,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67d181b19bf27e949bc37b1ecf52564b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  cardSpacing: 140
+  positionSmoothTime: 0.1
 --- !u!224 &729242365
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1140,32 +1141,6 @@ RectTransform:
   m_AnchoredPosition: {x: 490, y: 9}
   m_SizeDelta: {x: -1192.1, y: -856.7006}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &729242366
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 729242363}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Padding:
-    m_Left: 0
-    m_Right: 0
-    m_Top: 0
-    m_Bottom: 0
-  m_ChildAlignment: 4
-  m_Spacing: 0
-  m_ChildForceExpandWidth: 1
-  m_ChildForceExpandHeight: 1
-  m_ChildControlWidth: 0
-  m_ChildControlHeight: 0
-  m_ChildScaleWidth: 0
-  m_ChildScaleHeight: 0
-  m_ReverseArrangement: 0
 --- !u!114 &729242367
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2341,10 +2316,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   startingDeck:
-  - {fileID: 11400000, guid: d26dc03ee0044d540a11458a1a318bd8, type: 2}
-  - {fileID: 11400000, guid: 22ed3ab63d75e594e8ef44cc2e5cb620, type: 2}
-  - {fileID: 11400000, guid: d8d0a15e4a30b9b408eb5dff228458c8, type: 2}
+  - {fileID: 11400000, guid: 454a1276d52eb9b45ae639e93eedaeae, type: 2}
   - {fileID: 11400000, guid: 2b23c0d496625854693fc93b8f2a5874, type: 2}
+  - {fileID: 11400000, guid: 22ed3ab63d75e594e8ef44cc2e5cb620, type: 2}
+  - {fileID: 11400000, guid: 2b23c0d496625854693fc93b8f2a5874, type: 2}
+  - {fileID: 11400000, guid: 9cf738df9703229499c4654f6633cde0, type: 2}
+  - {fileID: 11400000, guid: c5410fe367f05bb4ea870d2dbf7a55ee, type: 2}
+  - {fileID: 11400000, guid: d8d0a15e4a30b9b408eb5dff228458c8, type: 2}
+  - {fileID: 11400000, guid: b421cc9b4adc90f41919067b8894f47a, type: 2}
+  - {fileID: 11400000, guid: 2a6f4825936a03548b7b166309cbcc8d, type: 2}
+  - {fileID: 11400000, guid: d26dc03ee0044d540a11458a1a318bd8, type: 2}
   deck: []
   discardPile: []
   handPanel: {fileID: 749286408}
@@ -2385,23 +2366,22 @@ MonoBehaviour:
   enemySlot: {fileID: 729242364}
   enemyWaves:
   - enemies:
-    - {fileID: 11400000, guid: d26dc03ee0044d540a11458a1a318bd8, type: 2}
-    - {fileID: 11400000, guid: 2b23c0d496625854693fc93b8f2a5874, type: 2}
-    - {fileID: 11400000, guid: d26dc03ee0044d540a11458a1a318bd8, type: 2}
-  - enemies:
     - {fileID: 11400000, guid: 22ed3ab63d75e594e8ef44cc2e5cb620, type: 2}
-    - {fileID: 11400000, guid: d8d0a15e4a30b9b408eb5dff228458c8, type: 2}
-    - {fileID: 11400000, guid: 2b23c0d496625854693fc93b8f2a5874, type: 2}
+    - {fileID: 11400000, guid: 22ed3ab63d75e594e8ef44cc2e5cb620, type: 2}
+    - {fileID: 11400000, guid: d1185059a5fbf2349b19c34226f9f677, type: 2}
+  - enemies:
+    - {fileID: 11400000, guid: b421cc9b4adc90f41919067b8894f47a, type: 2}
+    - {fileID: 11400000, guid: d1185059a5fbf2349b19c34226f9f677, type: 2}
   - enemies:
     - {fileID: 11400000, guid: 454a1276d52eb9b45ae639e93eedaeae, type: 2}
     - {fileID: 11400000, guid: 9cf738df9703229499c4654f6633cde0, type: 2}
   currentWaveIndex: 0
-  cardsPerTurn: 3
+  cardsPerTurn: 10
   pauseButton: {fileID: 1147754249}
   normalButton: {fileID: 1224738511}
   fastButton: {fileID: 716190396}
   rewardPanel: {fileID: 1946625996}
-  fadePanel: {fileID: 0}
+  fadePanel: {fileID: 1157730768}
 --- !u!114 &1478080827
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2433,8 +2413,8 @@ MonoBehaviour:
   rewardContainer: {fileID: 396079737}
   rewardCardPrefab: {fileID: 7900327867845770161, guid: 32fc5e2a7f869a04fba758482bae34e6, type: 3}
   rewardPanelUI: {fileID: 1946625996}
-  rewardPool:
-  - {fileID: 11400000, guid: 41d275eb0c2a37c40b3d9be0f7f78d59, type: 2}
+  rewardPool: []
+  rewardChoicesTemplate: []
 --- !u!1 &1498013605
 GameObject:
   m_ObjectHideFlags: 0
@@ -2574,7 +2554,6 @@ GameObject:
   - component: {fileID: 1742783201}
   - component: {fileID: 1742783200}
   - component: {fileID: 1742783202}
-  - component: {fileID: 1742783203}
   m_Layer: 5
   m_Name: Slot
   m_TagString: Untagged
@@ -2654,32 +2633,9 @@ MonoBehaviour:
   slotPanel: {fileID: 1742783199}
   placeholderPrefab: {fileID: 5044044371483065630, guid: c987cec12e12eaf45b213bb71d5dd377, type: 3}
   maxCreatures: 5
---- !u!114 &1742783203
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1742783198}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Padding:
-    m_Left: 0
-    m_Right: 0
-    m_Top: 0
-    m_Bottom: 0
-  m_ChildAlignment: 4
-  m_Spacing: 0
-  m_ChildForceExpandWidth: 1
-  m_ChildForceExpandHeight: 1
-  m_ChildControlWidth: 0
-  m_ChildControlHeight: 0
-  m_ChildScaleWidth: 0
-  m_ChildScaleHeight: 0
-  m_ReverseArrangement: 0
+  cardSpacing: 140
+  cardWidth: 124.96
+  positionSmoothTime: 0.1
 --- !u!1 &1792967157
 GameObject:
   m_ObjectHideFlags: 0
