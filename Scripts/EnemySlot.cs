@@ -3,8 +3,9 @@ using System.Collections.Generic;
 
 public class EnemySlot : MonoBehaviour, ICreatureSlot
 {
-    public float cardSpacing = 120f; // Расстояние между картами
-    public float positionSmoothTime = 0.1f; // Чем меньше, тем быстрее движение
+    public int maxCreatures = 5; // Максимальное количество монстров
+    public float cardSpacing = 120f;
+    public float positionSmoothTime = 0.1f;
 
     private Dictionary<RectTransform, Vector2> velocityMap = new Dictionary<RectTransform, Vector2>();
 
@@ -16,7 +17,6 @@ public class EnemySlot : MonoBehaviour, ICreatureSlot
     private void UpdateCardPositions()
     {
         List<CreatureInstance> creatures = GetCreatures();
-        // Сортировка по иерархии (по необходимости)
         creatures.Sort((a, b) => a.transform.GetSiblingIndex().CompareTo(b.transform.GetSiblingIndex()));
 
         float totalWidth = creatures.Count * cardSpacing;
@@ -27,12 +27,11 @@ public class EnemySlot : MonoBehaviour, ICreatureSlot
             RectTransform rect = creatures[i].GetComponent<RectTransform>();
             if (rect != null)
             {
-                Vector2 targetPos = new Vector2(startX + i * cardSpacing, 0f);
-
                 if (!velocityMap.ContainsKey(rect))
                     velocityMap[rect] = Vector2.zero;
 
                 Vector2 velocity = velocityMap[rect];
+                Vector2 targetPos = new Vector2(startX + i * cardSpacing, 0f);
 
                 rect.anchoredPosition = Vector2.SmoothDamp(
                     rect.anchoredPosition,
@@ -55,5 +54,10 @@ public class EnemySlot : MonoBehaviour, ICreatureSlot
             if (c != null && !c.isDead) list.Add(c);
         }
         return list;
+    }
+
+    public bool CanAddCreature()
+    {
+        return GetCreatures().Count < maxCreatures;
     }
 }

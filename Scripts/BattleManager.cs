@@ -176,6 +176,27 @@ public class BattleManager : MonoBehaviour
 
         switch (unit.ability)
         {
+            case AbilityType.BuffAllHP2:
+                foreach (var ally in allies)
+                {
+                    if (ally != null)
+                    {
+                        ally.ApplyBuff(0, 2);
+                        affected.Add(ally);
+                    }
+                }
+                break;
+
+            case AbilityType.BuffAllATK1:
+                foreach (var ally in allies)
+                {
+                    if (ally != null)
+                    {
+                        ally.ApplyBuff(1, 0);
+                        affected.Add(ally);
+                    }
+                }
+                break;
             case AbilityType.BuffFrontHP4:
                 var front = GetFrontAlly(allies, index, unit.isEnemy);
                 if (front != null)
@@ -332,9 +353,15 @@ public class BattleManager : MonoBehaviour
     {
         if (summoner == null) yield break;
 
-        Debug.Log($"{summoner.name} призывает существо перед собой!");
-
         ICreatureSlot slot = summoner.isEnemy ? (ICreatureSlot)enemySlot : playerSlot;
+
+        // проверка для EnemySlot
+        if (slot is EnemySlot enemySlotCheck && !enemySlotCheck.CanAddCreature())
+        {
+            Debug.Log($"{summoner.name} не может призвать существо — слот полон!");
+            yield break;
+        }
+
         var allies = slot.GetCreatures();
         int index = allies.IndexOf(summoner);
         if (index == -1) yield break;
