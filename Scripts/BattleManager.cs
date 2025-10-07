@@ -233,11 +233,8 @@ private IEnumerator TriggerAbilities(CreatureInstance unit)
             affected.Add(unit);
             break;
 
-        // ⚠️ Блок убрали — он теперь пассивный
-        // case AbilityType.Block1Damage: break;
-
         case AbilityType.DoubleAttack:
-            unit.StartCoroutine(DoubleAttack(unit, unit.isEnemy));
+            yield return StartCoroutine(DoubleAttack(unit, unit.isEnemy));
             break;
 
         case AbilityType.SummonInFront:
@@ -252,13 +249,6 @@ private IEnumerator TriggerAbilities(CreatureInstance unit)
 
     yield return new WaitForSeconds(battleDelay);
 }
-
-    private IEnumerator ApplyTemporaryBlock(CreatureInstance unit, int amount)
-    {
-        unit.blockValue += amount;
-        Debug.Log($"{unit.name} получает блок {amount} на каждую атаку!");
-        yield return null;
-    }
 
     private IEnumerator DoubleAttack(CreatureInstance unit, bool isEnemy)
     {
