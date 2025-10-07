@@ -201,15 +201,20 @@ private IEnumerator HandleBattleWonTransition()
     // показываем панель наград
     rewardPanel.SetActive(true);
 
-    // 🎯 Награды из текущей волны
-    if (!isLastWave && currentWaveIndex < enemyWaves.Count)
-    {
-        List<CardData> currentEnemies = enemyWaves[currentWaveIndex].enemies;
-        if (currentEnemies != null && currentEnemies.Count > 0)
+        // 🎯 Награды из текущей волны
+        if (!isLastWave && currentWaveIndex < enemyWaves.Count)
         {
-            rewardManager.ShowRewardsFromEnemies(currentEnemies);
+            rewardPanel.SetActive(true); // включаем только если реально будут награды
+            List<CardData> currentEnemies = enemyWaves[currentWaveIndex].enemies;
+            if (currentEnemies != null && currentEnemies.Count > 0)
+            {
+                rewardManager.ShowRewardsFromEnemies(currentEnemies);
+            }
         }
-    }
+        else
+        {
+            rewardPanel.SetActive(false); // если наград нет — панель выключена
+        }
 
     // возвращаем плавное проявление фона только если не последняя волна
     if (!isLastWave)

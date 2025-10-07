@@ -8,7 +8,8 @@ public class CreatureInstance : MonoBehaviour
     [Header("Статы")]
     public int currentHP;
     public int attack;
-    public int blockValue = 0; // блокируемое значение урона
+    public int blockValue = 0;       // временный блок (тратится)
+    public int passiveBlock = 0;     // постоянный блок (не тратится)
 
     [Header("Данные карты")]
     public CardData cardData;
@@ -55,10 +56,12 @@ public class CreatureInstance : MonoBehaviour
         isEnemy = enemy;
         cardData = data;
 
-        // берем summonPrefab из данных карты, если не передан явно
         summonPrefab = summon ?? cardData?.summonPrefab;
-
         ability = (cardData != null) ? cardData.ability : AbilityType.None;
+
+        // Если у карты пассивный блок — активируем
+        if (ability == AbilityType.Block1Damage)
+            passiveBlock = 1;
 
         // Спрайт существа
         if (creatureImage != null && cardData?.creatureInside != null)
@@ -78,9 +81,7 @@ public class CreatureInstance : MonoBehaviour
             }
         }
 
-        // скрываем череп
         skullIcon?.SetActive(false);
-
         UpdateUI();
     }
 
@@ -97,9 +98,8 @@ public class CreatureInstance : MonoBehaviour
         if (hpDelta != 0 && hpText != null)
             StartCoroutine(BuffFlash(hpText, Color.green, 0.3f));
 
-        // проигрываем звук повышения стата
         if (atkDelta != 0 || hpDelta != 0)
-        AudioManager.Instance?.PlayStatUp();
+            AudioManager.Instance?.PlayStatUp();
     }
 
     // === Урон ===
@@ -107,8 +107,14 @@ public class CreatureInstance : MonoBehaviour
     {
         if (isDead) return;
 
-        int blocked = Mathf.Min(blockValue, dmg);
+        // общий блок = пассивный + временный
+        int totalBlock = passiveBlock + blockValue;
+
+        int blocked = Mathf.Min(totalBlock, dmg);
         dmg -= blocked;
+
+        // уменьшаем только временный блок
+        blockValue -= Mathf.Min(blockValue, blocked);
 
         currentHP -= dmg;
         if (currentHP < 0) currentHP = 0;
@@ -137,7 +143,6 @@ public class CreatureInstance : MonoBehaviour
     // === Анимации ===
     public IEnumerator DoAttackAnimation(bool isEnemyAttack)
     {
-        // проигрываем звук атаки
         AudioManager.Instance?.PlayAttack();
 
         Vector3 startPos = transform.localPosition;
@@ -156,7 +161,6 @@ public class CreatureInstance : MonoBehaviour
 
     public IEnumerator Shake(float duration, float magnitude)
     {
-        // проигрываем звук тряски
         AudioManager.Instance?.PlayShake();
 
         Vector3 originalPos = transform.localPosition;
@@ -218,8 +222,7 @@ public class CreatureInstance : MonoBehaviour
 
         jarObject.SetActive(false);
     }
-    
-// === Враги: сжатие + исчезновение ===
+
     private IEnumerator DeathAnimationEnemy()
     {
         AudioManager.Instance?.PlayDeath();
@@ -249,67 +252,58 @@ public class CreatureInstance : MonoBehaviour
         Destroy(gameObject);
     }
 
-// === Союзники: улетание в сброс ===
-private IEnumerator DeathAnimationAlly()
-{
-    AudioManager.Instance?.PlayDeath();
-
-    CanvasGroup cg = GetComponent<CanvasGroup>();
-    if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
-    cg.interactable = false;
-    cg.blocksRaycasts = false;
-
-    RectTransform rect = GetComponent<RectTransform>();
-    RectTransform discardRect = DeckManager.Instance.discardPileTransform?.GetComponent<RectTransform>();
-
-    if (discardRect == null)
+    private IEnumerator DeathAnimationAlly()
     {
+        AudioManager.Instance?.PlayDeath();
+
+        CanvasGroup cg = GetComponent<CanvasGroup>();
+        if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
+        cg.interactable = false;
+        cg.blocksRaycasts = false;
+
+        RectTransform rect = GetComponent<RectTransform>();
+        RectTransform discardRect = DeckManager.Instance.discardPileTransform?.GetComponent<RectTransform>();
+
+        if (discardRect == null)
+        {
+            Destroy(gameObject);
+            yield break;
+        }
+
+        Vector2 startPos = rect.anchoredPosition;
+        Vector2 targetPos = discardRect.anchoredPosition;
+        Vector3 originalScale = rect.localScale;
+        Vector3 targetScale = originalScale * 0.5f;
+
+        float duration = 0.8f;
+        float elapsed = 0f;
+
+        float zigzagMagnitude = 40f;
+        int zigzagCount = 3;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            Vector2 basePos = Vector2.Lerp(startPos, targetPos, Mathf.SmoothStep(0, 1, t));
+            float zigzagOffset = Mathf.Sin(t * Mathf.PI * zigzagCount) * zigzagMagnitude * (1 - t);
+            rect.anchoredPosition = basePos + new Vector2(zigzagOffset, 0);
+
+            float rotationZ = Mathf.Lerp(0f, 180f, t);
+            rect.localRotation = Quaternion.Euler(0, 0, rotationZ);
+            rect.localScale = Vector3.Lerp(originalScale, targetScale, t);
+            cg.alpha = Mathf.Lerp(1f, 0f, t);
+
+            yield return null;
+        }
+
+        if (cardData != null)
+            DeckManager.Instance.DiscardCard(cardData);
+
         Destroy(gameObject);
-        yield break;
     }
 
-    // Запоминаем начальные данные
-    Vector2 startPos = rect.anchoredPosition;
-    Vector2 targetPos = discardRect.anchoredPosition;
-    Vector3 originalScale = rect.localScale;
-    Vector3 targetScale = originalScale * 0.5f;
-
-    float duration = 0.8f;
-    float elapsed = 0f;
-
-    float zigzagMagnitude = 40f;
-    int zigzagCount = 3;
-
-    while (elapsed < duration)
-    {
-        elapsed += Time.deltaTime;
-        float t = elapsed / duration;
-
-        // Плавное движение
-        Vector2 basePos = Vector2.Lerp(startPos, targetPos, Mathf.SmoothStep(0, 1, t));
-
-        // Зигзаг
-        float zigzagOffset = Mathf.Sin(t * Mathf.PI * zigzagCount) * zigzagMagnitude * (1 - t);
-        rect.anchoredPosition = basePos + new Vector2(zigzagOffset, 0);
-
-        // Вращение и уменьшение
-        float rotationZ = Mathf.Lerp(0f, 180f, t);
-        rect.localRotation = Quaternion.Euler(0, 0, rotationZ);
-        rect.localScale = Vector3.Lerp(originalScale, targetScale, t);
-        cg.alpha = Mathf.Lerp(1f, 0f, t);
-
-        yield return null;
-    }
-
-    if (cardData != null)
-        DeckManager.Instance.DiscardCard(cardData);
-
-    Destroy(gameObject);
-}
-
-
-
-    // === Черепок ===
     public void ShowSkullIcon() { if (skullIcon != null) skullIcon.SetActive(true); }
     public void HideSkullIcon() { if (skullIcon != null) skullIcon.SetActive(false); }
 }

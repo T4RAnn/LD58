@@ -91,49 +91,46 @@ public class RewardCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
     }
 
     // === Анимация полета награды по дуге в колоду ===
-public IEnumerator FlyToDeck(Transform deckTransform)
-{
-    selectButton.interactable = false;
-
-    // Получаем RectTransform и Canvas
-    RectTransform rect = GetComponent<RectTransform>();
-    Canvas canvas = GetComponentInParent<Canvas>();
-    
-    Vector3 startPos = rect.position;
-    Vector3 endPos = deckTransform.position;
-    Vector3 startScale = rect.localScale;
-    Vector3 endScale = Vector3.zero;
-
-    float duration = 0.8f;
-    float elapsed = 0f;
-    float arcHeight = 1.5f; // Уменьшаем высоту дуги для мировых координат
-
-    while (elapsed < duration)
+    public IEnumerator FlyToDeck(Transform deckTransform)
     {
-        elapsed += Time.deltaTime;
-        float t = elapsed / duration;
-        t = Mathf.SmoothStep(0f, 1f, t);
+        selectButton.interactable = false;
 
-        Vector3 midPoint = Vector3.Lerp(startPos, endPos, t);
-        
-        // Для Canvas с режимом Camera используем мировые координаты
-        if (canvas.renderMode == RenderMode.ScreenSpaceCamera || canvas.renderMode == RenderMode.WorldSpace)
+        RectTransform rect = GetComponent<RectTransform>();
+        Canvas canvas = GetComponentInParent<Canvas>();
+
+        Vector3 startPos = rect.position;
+        Vector3 endPos = deckTransform.position;
+        Vector3 startScale = rect.localScale;
+        Vector3 endScale = Vector3.zero;
+
+        float duration = 0.8f;
+        float elapsed = 0f;
+        float arcHeight = 1.5f;
+
+        while (elapsed < duration)
         {
-            midPoint.y += Mathf.Sin(t * Mathf.PI) * arcHeight;
-        }
-        else // Для Overlay
-        {
-            midPoint.y += Mathf.Sin(t * Mathf.PI) * arcHeight * 100f; // Большая высота для экранных координат
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            t = Mathf.SmoothStep(0f, 1f, t);
+
+            Vector3 midPoint = Vector3.Lerp(startPos, endPos, t);
+
+            if (canvas.renderMode == RenderMode.ScreenSpaceCamera || canvas.renderMode == RenderMode.WorldSpace)
+            {
+                midPoint.y += Mathf.Sin(t * Mathf.PI) * arcHeight;
+            }
+            else
+            {
+                midPoint.y += Mathf.Sin(t * Mathf.PI) * arcHeight * 100f;
+            }
+
+            rect.position = midPoint;
+            rect.localScale = Vector3.Lerp(startScale, endScale, t);
+            rect.rotation = Quaternion.Euler(0, 0, Mathf.Lerp(0, 360f, t));
+
+            yield return null;
         }
 
-        rect.position = midPoint;
-        rect.localScale = Vector3.Lerp(startScale, endScale, t);
-        rect.rotation = Quaternion.Euler(0, 0, Mathf.Lerp(0, 360f, t));
-
-        yield return null;
+        Destroy(gameObject);
     }
-
-    DeckManager.Instance.deck.Add(cardData);
-    Destroy(gameObject);
-}
 }

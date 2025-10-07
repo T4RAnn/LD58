@@ -158,147 +158,100 @@ public class BattleManager : MonoBehaviour
         return null;
     }
 
-    private IEnumerator TriggerAbilities(CreatureInstance unit)
-    {
-        if (unit == null || unit.ability == AbilityType.None) yield break;
+private IEnumerator TriggerAbilities(CreatureInstance unit)
+{
+    if (unit == null || unit.ability == AbilityType.None) yield break;
 
-        Debug.Log($"[{unit.name}] Активирует способность: {unit.ability}");
+    Debug.Log($"[{unit.name}] Активирует способность: {unit.ability}");
 
-        // тряска при активации абилки
+    // тряска при активации абилки (только если не пассивка)
+    if (unit.ability != AbilityType.Block1Damage)
         yield return unit.StartCoroutine(unit.Shake(0.25f, 7f));
 
-        ICreatureSlot slot = unit.isEnemy ? (ICreatureSlot)enemySlot : playerSlot;
-        var allies = slot.GetCreatures();
-        int index = allies.IndexOf(unit);
-        if (index == -1) yield break;
+    ICreatureSlot slot = unit.isEnemy ? (ICreatureSlot)enemySlot : playerSlot;
+    var allies = slot.GetCreatures();
+    int index = allies.IndexOf(unit);
+    if (index == -1) yield break;
 
-        List<CreatureInstance> affected = new List<CreatureInstance>();
+    List<CreatureInstance> affected = new List<CreatureInstance>();
 
-        switch (unit.ability)
-        {
-            case AbilityType.BuffAllHP2:
-                foreach (var ally in allies)
-                {
-                    if (ally != null)
-                    {
-                        ally.ApplyBuff(0, 2);
-                        affected.Add(ally);
-                    }
-                }
-                break;
+    switch (unit.ability)
+    {
+        case AbilityType.BuffAllHP2:
+            foreach (var ally in allies)
+                if (ally != null) { ally.ApplyBuff(0, 2); affected.Add(ally); }
+            break;
 
-            case AbilityType.BuffAllATK1:
-                foreach (var ally in allies)
-                {
-                    if (ally != null)
-                    {
-                        ally.ApplyBuff(1, 0);
-                        affected.Add(ally);
-                    }
-                }
-                break;
-            case AbilityType.BuffFrontHP4:
-                var front = GetFrontAlly(allies, index, unit.isEnemy);
-                if (front != null)
-                {
-                    front.ApplyBuff(0, 4);
-                    affected.Add(front);
-                }
-                break;
+        case AbilityType.BuffAllATK1:
+            foreach (var ally in allies)
+                if (ally != null) { ally.ApplyBuff(1, 0); affected.Add(ally); }
+            break;
 
-            case AbilityType.BuffBackHP5:
-                var back = GetBackAlly(allies, index, unit.isEnemy);
-                if (back != null)
-                {
-                    back.ApplyBuff(0, 5);
-                    affected.Add(back);
-                }
-                break;
+        case AbilityType.BuffFrontHP4:
+            var front = GetFrontAlly(allies, index, unit.isEnemy);
+            if (front != null) { front.ApplyBuff(0, 4); affected.Add(front); }
+            break;
 
-            case AbilityType.BuffBackATK3:
-                var backAtk = GetBackAlly(allies, index, unit.isEnemy);
-                if (backAtk != null)
-                {
-                    backAtk.ApplyBuff(3, 0);
-                    affected.Add(backAtk);
-                }
-                break;
+        case AbilityType.BuffBackHP5:
+            var back = GetBackAlly(allies, index, unit.isEnemy);
+            if (back != null) { back.ApplyBuff(0, 5); affected.Add(back); }
+            break;
 
-            case AbilityType.BuffBackAllATK1:
-                if (unit.isEnemy)
-                {
-                    for (int i = index + 1; i < allies.Count; i++)
-                        if (allies[i] != null)
-                        {
-                            allies[i].ApplyBuff(1, 0);
-                            affected.Add(allies[i]);
-                        }
-                }
-                else
-                {
-                    for (int i = index - 1; i >= 0; i--)
-                        if (allies[i] != null)
-                        {
-                            allies[i].ApplyBuff(1, 0);
-                            affected.Add(allies[i]);
-                        }
-                }
-                break;
+        case AbilityType.BuffBackATK3:
+            var backAtk = GetBackAlly(allies, index, unit.isEnemy);
+            if (backAtk != null) { backAtk.ApplyBuff(3, 0); affected.Add(backAtk); }
+            break;
 
-            case AbilityType.BuffBackAllHP1:
-                if (unit.isEnemy)
-                {
-                    for (int i = index + 1; i < allies.Count; i++)
-                        if (allies[i] != null)
-                        {
-                            allies[i].ApplyBuff(0, 1);
-                            affected.Add(allies[i]);
-                        }
-                }
-                else
-                {
-                    for (int i = index - 1; i >= 0; i--)
-                        if (allies[i] != null)
-                        {
-                            allies[i].ApplyBuff(0, 1);
-                            affected.Add(allies[i]);
-                        }
-                }
-                break;
-
-            case AbilityType.SelfBuff1HP1ATK:
-                unit.ApplyBuff(1, 1);
-                affected.Add(unit);
-                break;
-
-            case AbilityType.Block1Damage:
-                unit.StartCoroutine(ApplyTemporaryBlock(unit, 1));
-                break;
-
-            case AbilityType.DoubleAttack:
-                unit.StartCoroutine(DoubleAttack(unit, unit.isEnemy));
-                break;
-
-            case AbilityType.SummonInFront:
-                unit.StartCoroutine(SummonAllyInFront(unit));
-                break;
-        }
-
-        // тряска для всех затронутых
-        List<Coroutine> running = new List<Coroutine>();
-        foreach (var ally in affected)
-        {
-            if (ally != null)
+        case AbilityType.BuffBackAllATK1:
+            if (unit.isEnemy)
             {
-                running.Add(ally.StartCoroutine(ally.Shake(0.2f, 5f)));
+                for (int i = index + 1; i < allies.Count; i++)
+                    if (allies[i] != null) { allies[i].ApplyBuff(1, 0); affected.Add(allies[i]); }
             }
-        }
+            else
+            {
+                for (int i = index - 1; i >= 0; i--)
+                    if (allies[i] != null) { allies[i].ApplyBuff(1, 0); affected.Add(allies[i]); }
+            }
+            break;
 
-        foreach (var c in running)
-            yield return c;
+        case AbilityType.BuffBackAllHP1:
+            if (unit.isEnemy)
+            {
+                for (int i = index + 1; i < allies.Count; i++)
+                    if (allies[i] != null) { allies[i].ApplyBuff(0, 1); affected.Add(allies[i]); }
+            }
+            else
+            {
+                for (int i = index - 1; i >= 0; i--)
+                    if (allies[i] != null) { allies[i].ApplyBuff(0, 1); affected.Add(allies[i]); }
+            }
+            break;
 
-        yield return new WaitForSeconds(battleDelay);
+        case AbilityType.SelfBuff1HP1ATK:
+            unit.ApplyBuff(1, 1);
+            affected.Add(unit);
+            break;
+
+        // ⚠️ Блок убрали — он теперь пассивный
+        // case AbilityType.Block1Damage: break;
+
+        case AbilityType.DoubleAttack:
+            unit.StartCoroutine(DoubleAttack(unit, unit.isEnemy));
+            break;
+
+        case AbilityType.SummonInFront:
+            unit.StartCoroutine(SummonAllyInFront(unit));
+            break;
     }
+
+    // тряска для всех, кого бафнули
+    foreach (var ally in affected)
+        if (ally != null)
+            yield return ally.StartCoroutine(ally.Shake(0.2f, 5f));
+
+    yield return new WaitForSeconds(battleDelay);
+}
 
     private IEnumerator ApplyTemporaryBlock(CreatureInstance unit, int amount)
     {
